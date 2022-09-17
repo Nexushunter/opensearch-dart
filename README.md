@@ -1,27 +1,102 @@
-<!-- 
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# OpenSearch For Dart & Flutter
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/guides/libraries/writing-package-pages). 
-
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-library-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/developing-packages). 
--->
-
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+This library is intended to be used in both [Flutter](https://flutter.dev) and [Dart](https://dart.dev) projects alike.
 
 ## Features
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+The following are the APIs implemented in this package.
+
+Module APIs:
+- [ ] Index
+  - [x] Create
+  - [x] Delete
+  - [x] Exists
+  - [ ] Get Index
+  - [ ] Open Index
+  - [ ] Close Index
+  - [ ] Shrink Index
+  - [ ] Split Index
+  - [ ] Clone Index
+  - [ ] Get Settings
+  - [ ] Update Settings
+  - [ ] Create / Update Mappings
+  - [ ] Clear Index or DataStream Cache
+- [ ] Ingest
+  - [ ] Get Ingest Pipeline
+  - [ ] Create /Update Ingest Pipeline
+  - [ ] Simulate an Ingest Pipeline
+  - [ ] Delete a pipeline
+- [ ] Nodes
+  - [ ] Nodes hot threads
+  - [ ] Nodes info
+- [ ] Snapshots
+  - [ ] Register Snapshot registry
+  - [ ] Get Snapshot registry
+  - [ ] Delete Snapshot registry
+  - [ ] Verify Snapshot registry
+  - [ ] Create Snapshot
+  - [ ] Get Snapshot
+  - [ ] Delete Snapshot
+  - [ ] Get Snapshot Status
+  - [ ] Restore Snapshot
+- [ ] CAT
+  -  [ ] aliases
+  -  [ ] allocation
+  -  [ ] count
+  -  [ ] field data
+  -  [ ] health
+  -  [ ] indices
+  -  [ ] cluster manager
+  -  [ ] nodeattrs
+  -  [ ] nodes
+  -  [ ] pending tasks
+  -  [ ] plugins
+  -  [ ] recovery
+  -  [ ] repositories
+  -  [ ] segments
+  -  [ ] shards
+  -  [ ] snapshots
+  -  [ ] tasks
+  -  [ ] templates
+  -  [ ] pool thread
+- [ ] Script
+  - [ ] Create / Update Stored Script
+  - [ ] Execute painless Stored Script
+  - [ ] Get Stored Script
+  - [ ] Delete Script
+  - [ ] Get Stored Script Contexts
+- [ ] Document
+  - [ ] Index document
+  - [ ] Get document
+  - [ ] Update document
+  - [ ] Delete document
+  - [ ] Bulk
+  - [ ] Multi-get document
+  - [ ] Delete by query
+  - [ ] Update by query
+  - [ ] Reindex
+
+Unorganized:
+- Search
+    - Single
+    - Multi
+- Alias
+- Cluster
+  - health
+  - stats
+  - allocation explain
+  - remote information
+- Tasks
+- Scroll
+- Explain
+- Count
 
 ## Getting started
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+Prerequisites:
+- Containerization technology (ie docker / podman)
+- Opensearch container image
+- Dart 2.18
 
 ## Usage
 
