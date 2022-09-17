@@ -12,7 +12,7 @@ jobs:
           sudo apt update
           sudo apt install -y make
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup flutter
         uses: subosito/flutter-action@v2
         with:
