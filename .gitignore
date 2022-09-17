@@ -21,4 +21,5 @@ doc/api/
 *.js.map
 
 .idea
-test-data/data/*
+test-data/data/*.conf
+test-data/data/nodes

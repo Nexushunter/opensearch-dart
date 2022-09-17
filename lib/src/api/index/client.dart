@@ -1,10 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:logging/logging.dart';
 
-import '../common/repsonses.dart';
+import '../common/responses.dart';
+import 'enums.dart';
+import 'exceptions.dart';
 
 class IndexClient {
   // TODO: Create OpenSearchClient
@@ -24,16 +25,14 @@ class IndexClient {
     Duration timeout = const Duration(seconds: 30),
     String? alias,
   }) async {
-    // TOO: Create exception class
-    if (name.startsWith(r'^[-_]*')) {
-      throw Exception('index must not start with _ or -');
-    } else if (name.contains(r'^[^A-Z]*$')) {
-      throw Exception('index name cannot contain capitals.');
-    } else if (name.contains(r'[\\\/\|\?\s\,\+\#\<\>\"]')) {
-      throw Exception(
-          'Index names cannot contain: comma, space, : ," ,* ,+ ,/ ,\\ ,| ,? ,# ,>,<');
+    if (name.startsWith(RegExp('^[-_]'))) {
+      throw IndexException.invalidIndexPrefix();
+    } else if (!name.contains(RegExp(r'^[^A-Z]*$'))) {
+      throw IndexException.indexNameContainsCapitals();
+    } else if (name.contains(RegExp(r'[\s\\/|?,+#<>"]*'))) {
+      throw IndexException.invalidNameFormat();
     } else if (exists(index: name).acknowledged) {
-      throw Exception('conflict: index exists');
+      throw IndexException.conflict();
     }
 
     if (waitForActiveShards < 1) {
@@ -41,33 +40,24 @@ class IndexClient {
     }
 
     var resp = await client
-        .put(name,
-            data: jsonEncode(
-              <String, dynamic>{
-                'mappings': {
-                  "properties": {},
-                },
-                "settings": {},
-                'aliases': {
-                  alias: {},
-                },
-              },
-            ),
-            queryParameters: <String, dynamic>{
-              'wait_for_active_shards': '$waitForActiveShards',
-            }
+        .put(name, data: <String, dynamic>{
+          'mappings': {
+            "properties": {},
+          },
+          "settings": {},
+          'aliases': {
+            alias: {},
+          },
+        }, queryParameters: <String, dynamic>{
+          'wait_for_active_shards': '$waitForActiveShards',
+        }
             // options: Options(
             //   sendTimeout: masterNodeTimeout.inSeconds,
             //   receiveTimeout: timeout.inSeconds,
             // ),
             )
         .timeout(timeout)
-        .onError((DioError e, stackTrace) {
-          return Response(
-              requestOptions: e.requestOptions,
-              statusMessage: e.response?.statusMessage,
-              statusCode: e.response?.statusCode);
-        });
+        .onError(onErrorResponse(endpoint: 'create'));
 
     if (resp.statusCode! >= 200 || resp.statusCode! < 300) {
       return AcknowledgeResponse();
@@ -115,7 +105,7 @@ class IndexClient {
   ///   closed indices.
   /// [masterTimeout] How long to wait for a connection to the master node.
   /// [timeout] How long to wait for the response to return.
-  AcknowledgeResponse delete({
+  FutureOr<AcknowledgeResponse> delete({
     required String index,
     bool allowNoIndices = true,
     List<ExpandWildCardOption> expandWildCardOptions = const [
@@ -124,18 +114,25 @@ class IndexClient {
     bool ignoreUnavailable = false,
     Duration masterTimeout = const Duration(seconds: 30),
     Duration timeout = const Duration(seconds: 30),
+  }) async {
+    return await client
+        .delete(index)
+        .timeout(timeout)
+        .onError(onErrorResponse(endpoint: 'delete'))
+        .then(
+          (value) => AcknowledgeResponse(acknowledged: value.statusCode == 200),
+        );
+  }
+
+  FutureOr<Response> Function(DioError, StackTrace) onErrorResponse({
+    required String endpoint,
   }) {
-    return AcknowledgeResponse();
+    return (error, stack) {
+      return Response(
+        requestOptions: error.requestOptions,
+        statusCode: error.response?.statusCode,
+        statusMessage: error.response?.statusMessage,
+      );
+    };
   }
 }
-
-/// Expands wildcard expressions to different indices.
-///
-/// Available values are:
-/// - [all] (match all indices)
-/// - [open] (match open indices)
-/// - [closed] (match closed indices)
-/// - [hidden] (match hidden indices)
-/// - [none] (do not accept wildcard expressions), which must be used with
-///     [open], [closed], or both.
-enum ExpandWildCardOption { all, open, closed, hidden, none }

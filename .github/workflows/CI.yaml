@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+
+jobs:
+  build-flutter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install deps
+        run: |
+          sudo apt update
+          sudo apt install -y make
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+      - name: Run Tests
+        run: make ui-tests
+      - name: Archive coverage artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: unit-test-coverage.info
+          path: ui/coverage/lcov.info
