@@ -118,8 +118,8 @@ class DynamicIndexSettings {
       if (!autoExpandReplicas.disabled)
         'index.auto_expand_replicas':
             '${autoExpandReplicas.lowerLimit}-${autoExpandReplicas.upperLimit}',
-      'index.search.idle.after': searchIdleAfter,
-      'index.refresh_interval': refreshInterval,
+      'index.search.idle.after': '${searchIdleAfter.inSeconds}s',
+      'index.refresh_interval': '${refreshInterval.inSeconds}s',
       'index.max_result_window': maxResultWindow,
       'index.max_inner_result_window': maxInnerResultWindow,
       'index.max_rescore_window': maxRescoreWindow,
@@ -135,7 +135,7 @@ class DynamicIndexSettings {
       'index.query.default_field': queryDefaultField,
       'index.routing.allocation.enable': routingAllocationEnable.lowercase(),
       'index.routing.rebalance.enable': routingReBalanceOption.lowercase(),
-      'index.gc_deletes': gcDeletes,
+      'index.gc_deletes': '${gcDeletes.inSeconds}s',
       'index.default_pipeline': defaultPipeline,
       'index.final_pipeline': finalPipeline,
     };
@@ -200,7 +200,8 @@ class StaticIndexSettings {
       'index.number_of_shards': numberOfShards,
       'index.routing_partition_size': routingPartitionSize,
       'index.shard.check_on_startup': shardCheckOnStart.lowercase(),
-      'index.soft_deletes.retention_period': softDeleteRetentionLeasePeriod,
+      'index.soft_deletes.retention_period':
+          '${softDeleteRetentionLeasePeriod.inSeconds}s',
     };
   }
 }

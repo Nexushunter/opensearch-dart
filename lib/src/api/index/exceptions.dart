@@ -14,4 +14,12 @@ class IndexException implements Exception {
 
   @override
   String toString() => message;
+
+  @override
+  bool operator ==(Object other) {
+    if (other is IndexException) {
+      return message == other.message;
+    }
+    return false;
+  }
 }

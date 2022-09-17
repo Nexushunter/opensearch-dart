@@ -44,11 +44,16 @@ class IndexClient {
     IndexMapping mappings = const IndexMapping(mappings: <String, FieldType>{}),
   }) async {
     verifyNaming(name);
+    if ((await exists(index: name)).acknowledged) {
+      throw IndexException.conflict();
+    }
 
     if (waitForActiveShards < 1) {
       waitForActiveShards = 1;
     }
 
+    // TODO: This mapping is causing things to break. The settings more than
+    //  likely need to be expanded instead of being flattened.
     var encoded = jsonEncode(<String, dynamic>{
       'mappings': {
         "properties": <String, dynamic>{}..addAll(mappings.toJson()),
@@ -64,7 +69,7 @@ class IndexClient {
     return await client
         .put(
           name,
-          data: encoded,
+          // data: encoded,
           queryParameters: <String, dynamic>{
             'wait_for_active_shards': '$waitForActiveShards',
           },
@@ -73,10 +78,9 @@ class IndexClient {
         .onError(onErrorResponse(endpoint: 'create'))
         .then(
           (resp) {
-            if (resp.statusCode! >= 200 && resp.statusCode! < 300) {
-              return AcknowledgeResponse();
-            }
-            return AcknowledgeResponse(acknowledged: false);
+            return AcknowledgeResponse(
+              acknowledged: resp.statusCode! >= 200 && resp.statusCode! < 300,
+            );
           },
         );
   }
@@ -111,9 +115,11 @@ class IndexClient {
     return await client
         .head(index)
         .onError(onErrorResponse(endpoint: 'exists'))
-        .then((value) => AcknowledgeResponse(
-              acknowledged: value.statusCode == 200,
-            ));
+        .then((value) {
+      return AcknowledgeResponse(
+        acknowledged: value.statusCode == 200,
+      );
+    });
   }
 
   /// Delete an [index] from the cluster.

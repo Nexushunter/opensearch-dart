@@ -9,6 +9,9 @@ void main() {
     Dio baseClient = Dio(BaseOptions(baseUrl: 'http://localhost:9200/'));
     var iClient = IndexClient(client: baseClient);
     group('Create Index', () {
+      // Clean up previous indices
+      setUp(() async => await iClient.delete(index: '*'));
+
       test('Successfully', () async {
         expect((await iClient.createIndex(name: 'name')).acknowledged, isTrue);
       });
@@ -16,91 +19,95 @@ void main() {
         test('Exists', () async {
           expect((await iClient.createIndex(name: 'fails-exists')).acknowledged,
               isTrue);
-          expect((await iClient.createIndex(name: 'fails-exists')).acknowledged,
-              isFalse);
+
+          try {
+            await iClient.createIndex(name: 'fails-exists');
+          } on IndexException catch (ex, s) {
+            expect(ex, IndexException.conflict());
+          }
         });
         test('Starts with _', () async {
           try {
             await iClient.createIndex(name: '_name');
           } on IndexException catch (e, s) {
-            expect(e.message, IndexException.invalidIndexPrefix().message);
+            expect(e, IndexException.invalidIndexPrefix());
           }
         });
         test('Starts with -', () async {
           try {
             await iClient.createIndex(name: '-name');
           } on IndexException catch (e, s) {
-            expect(e.message, IndexException.invalidIndexPrefix().message);
+            expect(e, IndexException.invalidIndexPrefix());
           }
         });
         test('Contains space', () async {
           try {
             await iClient.createIndex(name: 'name test');
           } on IndexException catch (e, s) {
-            expect(e.message, IndexException.invalidNameFormat().message);
+            expect(e, IndexException.invalidNameFormat());
           }
         });
         test('Contains comma', () async {
           try {
             await iClient.createIndex(name: 'name,test');
           } on IndexException catch (e, s) {
-            expect(e.message, IndexException.invalidNameFormat().message);
+            expect(e, IndexException.invalidNameFormat());
           }
         });
         test('Contains |', () async {
           try {
             await iClient.createIndex(name: 'name|test');
           } on IndexException catch (e, s) {
-            expect(e.message, IndexException.invalidNameFormat().message);
+            expect(e, IndexException.invalidNameFormat());
           }
         });
         test('Contains /', () async {
           try {
             await iClient.createIndex(name: 'name/test');
           } on IndexException catch (e, s) {
-            expect(e.message, IndexException.invalidNameFormat().message);
+            expect(e, IndexException.invalidNameFormat());
           }
         });
         test('Contains \\', () async {
           try {
             await iClient.createIndex(name: 'name\\test');
           } on IndexException catch (e, s) {
-            expect(e.message, IndexException.invalidNameFormat().message);
+            expect(e, IndexException.invalidNameFormat());
           }
         });
         test('Contains >', () async {
           try {
             await iClient.createIndex(name: 'name>test');
           } on IndexException catch (e, s) {
-            expect(e.message, IndexException.invalidNameFormat().message);
+            expect(e, IndexException.invalidNameFormat());
           }
         });
         test('Contains <', () async {
           try {
             await iClient.createIndex(name: 'name<test');
           } on IndexException catch (e, s) {
-            expect(e.message, IndexException.invalidNameFormat().message);
+            expect(e, IndexException.invalidNameFormat());
           }
         });
         test('Contains #', () async {
           try {
             await iClient.createIndex(name: 'name#test');
           } on IndexException catch (e, s) {
-            expect(e.message, IndexException.invalidNameFormat().message);
+            expect(e, IndexException.invalidNameFormat());
           }
         });
         test('Contains +', () async {
           try {
             await iClient.createIndex(name: 'name+test');
           } on IndexException catch (e, s) {
-            expect(e.message, IndexException.invalidNameFormat().message);
+            expect(e, IndexException.invalidNameFormat());
           }
         });
         test('Contains *', () async {
           try {
             await iClient.createIndex(name: 'name*test');
           } on IndexException catch (e, s) {
-            expect(e.message, IndexException.invalidNameFormat().message);
+            expect(e, IndexException.invalidNameFormat());
           }
         });
       });
