@@ -17,10 +17,14 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+      - name: Install OpenSearch
+        uses: ankane/setup-opensearch@v1
+        with:
+          opensearch-version: 2.3.0
       - name: Run Tests
-        run: make ui-tests
+        run: make unit-tests
       - name: Archive coverage artifact
         uses: actions/upload-artifact@v2
         with:
           name: unit-test-coverage.info
-          path: ui/coverage/lcov.info
+          path: coverage/lcov.info

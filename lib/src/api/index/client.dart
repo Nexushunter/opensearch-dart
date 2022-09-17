@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:logging/logging.dart';
+import 'package:opensearch_dart/src/api/index/index_settings.dart';
 
 import '../common/responses.dart';
 import 'enums.dart';
 import 'exceptions.dart';
+import 'mapping.dart';
 
 class IndexClient {
   // TODO: Create OpenSearchClient
@@ -24,12 +27,15 @@ class IndexClient {
     Duration masterNodeTimeout = const Duration(seconds: 30),
     Duration timeout = const Duration(seconds: 30),
     String? alias,
+    StaticIndexSettings staticSettings = const StaticIndexSettings(),
+    DynamicIndexSettings dynamicSettings = const DynamicIndexSettings(),
+    IndexMapping mappings = const IndexMapping(mappings: <String, FieldType>{}),
   }) async {
     if (name.startsWith(RegExp('^[-_]'))) {
       throw IndexException.invalidIndexPrefix();
     } else if (!name.contains(RegExp(r'^[^A-Z]*$'))) {
       throw IndexException.indexNameContainsCapitals();
-    } else if (name.contains(RegExp(r'[\s\\/|?,+#<>"]*'))) {
+    } else if (name.contains(RegExp(r'[\s\\/|?,+#<>"*]'))) {
       throw IndexException.invalidNameFormat();
     } else if (exists(index: name).acknowledged) {
       throw IndexException.conflict();
@@ -39,33 +45,40 @@ class IndexClient {
       waitForActiveShards = 1;
     }
 
-    var resp = await client
-        .put(name, data: <String, dynamic>{
-          'mappings': {
-            "properties": {},
+    var encoded = jsonEncode(<String, dynamic>{
+      'mappings': {
+        "properties": <String, dynamic>{}..addAll(mappings.toJson()),
+      },
+      "settings": <String, dynamic>{}
+        ..addAll(staticSettings.toJson())
+        ..addAll(dynamicSettings.toJson()),
+      'aliases': {
+        if (alias != null) alias: {},
+      },
+    });
+
+    return await client
+        .put(
+          name,
+          data: encoded,
+          queryParameters: <String, dynamic>{
+            'wait_for_active_shards': '$waitForActiveShards',
           },
-          "settings": {},
-          'aliases': {
-            alias: {},
-          },
-        }, queryParameters: <String, dynamic>{
-          'wait_for_active_shards': '$waitForActiveShards',
-        }
-            // options: Options(
-            //   sendTimeout: masterNodeTimeout.inSeconds,
-            //   receiveTimeout: timeout.inSeconds,
-            // ),
-            )
+          // options: Options(
+          //   sendTimeout: masterNodeTimeout.inSeconds,
+          //   receiveTimeout: timeout.inSeconds,
+          // ),
+        )
         .timeout(timeout)
-        .onError(onErrorResponse(endpoint: 'create'));
-
-    if (resp.statusCode! >= 200 || resp.statusCode! < 300) {
-      return AcknowledgeResponse();
-    }
-
-    _log.finest('Got Response of ${resp.statusMessage}');
-
-    return AcknowledgeResponse(acknowledged: false);
+        .onError(onErrorResponse(endpoint: 'create'))
+        .then(
+          (resp) {
+            if (resp.statusCode! >= 200 && resp.statusCode! < 300) {
+              return AcknowledgeResponse();
+            }
+            return AcknowledgeResponse(acknowledged: false);
+          },
+        );
   }
 
   /// Verify whether or not an index already exists.
@@ -128,10 +141,13 @@ class IndexClient {
     required String endpoint,
   }) {
     return (error, stack) {
+      _log.finest('Failed to make index request: ${error.message}\n$stack');
+
       return Response(
         requestOptions: error.requestOptions,
-        statusCode: error.response?.statusCode,
-        statusMessage: error.response?.statusMessage,
+        statusCode: error.response?.statusCode ?? 500,
+        statusMessage: error.response?.statusMessage ??
+            '${error.message}\n $stack', //'Unable make index request',
       );
     };
   }

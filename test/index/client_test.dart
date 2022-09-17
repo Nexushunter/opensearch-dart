@@ -18,7 +18,7 @@ void main() {
               isTrue);
           expect((await iClient.createIndex(name: 'fails-exists')).acknowledged,
               isFalse);
-        }, skip: true);
+        });
         test('Starts with _', () async {
           try {
             await iClient.createIndex(name: '_name');

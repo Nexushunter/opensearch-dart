@@ -22,3 +22,19 @@ enum RoutingReBalanceOption { all, primaries, replicas, none }
 /// - [none] (do not accept wildcard expressions), which must be used with
 ///     [open], [closed], or both.
 enum ExpandWildCardOption { all, open, closed, hidden, none }
+
+enum FieldType {
+  boolean,
+  byte,
+  integer,
+  long,
+  float,
+  double,
+  string,
+  text,
+  timestamp,
+  ip,
+  binary,
+  struct,
+  array
+}

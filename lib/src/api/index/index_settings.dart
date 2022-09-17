@@ -87,7 +87,7 @@ class DynamicIndexSettings {
   /// have an ingest pipeline.
   final String finalPipeline;
 
-  DynamicIndexSettings({
+  const DynamicIndexSettings({
     this.numberOfReplicas = 1,
     this.autoExpandReplicas = const AutoExpandReplicaSetting(),
     this.searchIdleAfter = const Duration(seconds: 30),
@@ -178,7 +178,8 @@ class StaticIndexSettings {
   ///
   ///Hidden indices are not returned as part of queries that have wildcards.
   final bool hidden;
-  StaticIndexSettings({
+
+  const StaticIndexSettings({
     this.codec = IndexCodec.Default,
     this.hidden = false,
     this.loadFixedBitsetFiltersEagerly = true,
@@ -188,9 +189,7 @@ class StaticIndexSettings {
     // TODO: Should this be 1?
     this.numberOfRoutingShards = 0,
     this.routingPartitionSize = 1,
-  }) {
-    if (routingPartitionSize > 1) assert(routingPartitionSize < numberOfShards);
-  }
+  }) : assert(numberOfShards >= 1 && routingPartitionSize <= numberOfShards);
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
