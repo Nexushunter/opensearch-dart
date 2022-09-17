@@ -12,9 +12,10 @@ Module APIs:
   - [x] Delete
   - [x] Exists
   - [ ] Get Index
-  - [ ] Open Index
-  - [ ] Close Index
-  - [ ] Shrink Index
+    - [ ] Parse out mappings
+  - [x] Open Index
+  - [x] Close Index
+  - [x] Shrink Index
   - [ ] Split Index
   - [ ] Clone Index
   - [ ] Get Settings

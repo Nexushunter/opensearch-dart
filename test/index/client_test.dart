@@ -105,5 +105,8 @@ void main() {
         });
       });
     });
+    group('Delete Index', () {});
+    group('Get Index', () {});
+    group('Index exists', () {});
   });
 }

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:logging/logging.dart';
 import 'package:opensearch_dart/src/api/index/index_settings.dart';
+import 'package:opensearch_dart/src/api/index/responses.dart';
 
 import '../common/responses.dart';
 import 'enums.dart';
@@ -15,6 +16,17 @@ class IndexClient {
   late Dio client;
   static final _log = Logger('IndexClient');
   IndexClient({required this.client});
+
+  /// Verify the given [name] follow expected naming conventions.
+  void verifyNaming(String name) {
+    if (name.startsWith(RegExp('^[-_]'))) {
+      throw IndexException.invalidIndexPrefix();
+    } else if (!name.contains(RegExp(r'^[^A-Z]*$'))) {
+      throw IndexException.indexNameContainsCapitals();
+    } else if (name.contains(RegExp(r'[\s\\/|?,+#<>"*]'))) {
+      throw IndexException.invalidNameFormat();
+    }
+  }
 
   /// Creates an [Index] in the cluster.
   ///
@@ -31,15 +43,7 @@ class IndexClient {
     DynamicIndexSettings dynamicSettings = const DynamicIndexSettings(),
     IndexMapping mappings = const IndexMapping(mappings: <String, FieldType>{}),
   }) async {
-    if (name.startsWith(RegExp('^[-_]'))) {
-      throw IndexException.invalidIndexPrefix();
-    } else if (!name.contains(RegExp(r'^[^A-Z]*$'))) {
-      throw IndexException.indexNameContainsCapitals();
-    } else if (name.contains(RegExp(r'[\s\\/|?,+#<>"*]'))) {
-      throw IndexException.invalidNameFormat();
-    } else if (exists(index: name).acknowledged) {
-      throw IndexException.conflict();
-    }
+    verifyNaming(name);
 
     if (waitForActiveShards < 1) {
       waitForActiveShards = 1;
@@ -64,10 +68,6 @@ class IndexClient {
           queryParameters: <String, dynamic>{
             'wait_for_active_shards': '$waitForActiveShards',
           },
-          // options: Options(
-          //   sendTimeout: masterNodeTimeout.inSeconds,
-          //   receiveTimeout: timeout.inSeconds,
-          // ),
         )
         .timeout(timeout)
         .onError(onErrorResponse(endpoint: 'create'))
@@ -96,7 +96,7 @@ class IndexClient {
   ///   closed indices.
   /// [local] Whether to return information from only the local node instead of
   ///   from the master node.
-  AcknowledgeResponse exists({
+  FutureOr<AcknowledgeResponse> exists({
     required String index,
     bool allowNoIndices = true,
     List<ExpandWildCardOption> expandWildCardOptions = const [
@@ -106,8 +106,14 @@ class IndexClient {
     bool includeDefaults = false,
     bool ignoreUnavailable = false,
     bool local = false,
-  }) {
-    return AcknowledgeResponse(acknowledged: false);
+  }) async {
+    // TODO: Handle query params
+    return await client
+        .head(index)
+        .onError(onErrorResponse(endpoint: 'exists'))
+        .then((value) => AcknowledgeResponse(
+              acknowledged: value.statusCode == 200,
+            ));
   }
 
   /// Delete an [index] from the cluster.
@@ -128,6 +134,7 @@ class IndexClient {
     Duration masterTimeout = const Duration(seconds: 30),
     Duration timeout = const Duration(seconds: 30),
   }) async {
+    // TODO: Handle query Params
     return await client
         .delete(index)
         .timeout(timeout)
@@ -135,6 +142,136 @@ class IndexClient {
         .then(
           (value) => AcknowledgeResponse(acknowledged: value.statusCode == 200),
         );
+  }
+
+  /// Fetches information about an index.
+  FutureOr<GetIndexResponse> getIndex({
+    required String index,
+    bool allowNoIndices = true,
+    List<ExpandWildCardOption> expandWildCardOption = const [
+      ExpandWildCardOption.open
+    ],
+    bool flatSettings = false,
+    bool includeDefaults = false,
+    bool ignoreUnavailable = false,
+    bool local = false,
+    Duration masterTimeout = const Duration(seconds: 30),
+  }) async {
+    if (!(await exists(index: index)).acknowledged) {
+      throw IndexException.invalidIndex();
+    }
+
+    return await client
+        .get(index)
+        .timeout(masterTimeout)
+        .onError(onErrorResponse(endpoint: 'getIndex'))
+        .then((resp) {
+      var decoded = jsonDecode(resp.data) as Map<String, dynamic>;
+
+      decoded = decoded[index] as Map<String, dynamic>;
+
+      var mappings = <String, FieldType>{};
+      // TODO: Loop through and pull out the mapping information.
+
+      return GetIndexResponse(
+        indexName: index,
+        aliasMapping: decoded['aliases'],
+        settings: decoded['settings'],
+        mappings: mappings,
+      );
+    });
+  }
+
+  FutureOr<CloseIndexResponse> close({
+    List<String> indexNames = const ['*'],
+    bool allowNoIndices = true,
+    int waitForActiveShards = 1,
+    bool ignoreUnavailable = false,
+    Duration masterTimeout = const Duration(seconds: 30),
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
+    // TODO: Handle Query Params
+
+    return await client
+        .post('${indexNames.reduce((a, b) => '$a,$b')}/_close')
+        .onError(onErrorResponse(endpoint: 'close'))
+        .then((value) {
+      var decoded = jsonDecode(value.data);
+      var indexMapping = decoded['indices'] as Map<String, dynamic>;
+      var closedIndices = <String>[];
+      indexMapping.forEach((key, value) {
+        value as Map<String, dynamic>;
+        if (value['closed']) {
+          closedIndices.add(key);
+        }
+      });
+
+      return CloseIndexResponse(
+        shardsAcknowledged: ShardsAcknowledgedResponse(
+          shardsAcknowledged: decoded['shards_acknowledged'],
+          acknowledged: AcknowledgeResponse(
+            acknowledged: decoded['acknowledged'],
+          ),
+        ),
+        indicesClosed: closedIndices,
+      );
+    });
+  }
+
+  FutureOr<ShardsAcknowledgedResponse> open({
+    List<String> indexNames = const ['*'],
+    bool allowNoIndices = true,
+    int waitForActiveShards = 1,
+    bool ignoreUnavailable = false,
+    Duration masterTimeout = const Duration(seconds: 30),
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
+    // TODO: Handle query Params
+
+    return await client
+        .post('${indexNames.reduce((a, b) => '$a,$b')}/_open')
+        .onError(onErrorResponse(endpoint: 'open'))
+        .then((value) {
+      var decoded = jsonDecode(value.data);
+      var indexMapping = decoded['indices'] as Map<String, dynamic>;
+      var closedIndices = <String>[];
+      indexMapping.forEach((key, value) {
+        value as Map<String, dynamic>;
+        if (value['closed']) {
+          closedIndices.add(key);
+        }
+      });
+
+      return ShardsAcknowledgedResponse(
+        shardsAcknowledged: decoded['shards_acknowledged'],
+        acknowledged: AcknowledgeResponse(
+          acknowledged: decoded['acknowledged'],
+        ),
+      );
+    });
+  }
+
+  FutureOr<AcknowledgeResponse> shrinkIndex({
+    required String index,
+    required String target,
+    int waitForActiveShards = 1,
+    Duration masterTimeout = const Duration(seconds: 30),
+    Duration timeout = const Duration(seconds: 30),
+    StaticIndexSettings staticIndexSettings = const StaticIndexSettings(),
+    DynamicIndexSettings dynamicIndexSettings = const DynamicIndexSettings(),
+    int maxPrimaryShardSizeBytes = 10240,
+  }) async {
+    verifyNaming(index);
+    verifyNaming(target);
+
+    // TODO: Parse body for request
+    // TODO: handle query params
+
+    return await client
+        .post('$index/_shrink/$target')
+        .timeout(masterTimeout)
+        .onError(onErrorResponse(endpoint: 'shrink'))
+        .then((value) => AcknowledgeResponse());
   }
 
   FutureOr<Response> Function(DioError, StackTrace) onErrorResponse({

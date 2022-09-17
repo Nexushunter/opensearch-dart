@@ -9,6 +9,8 @@ class IndexException implements Exception {
       IndexException('index name cannot contain capitals.');
   factory IndexException.invalidNameFormat() => IndexException(
       'index names cannot contain: comma, space, : ," ,* ,+ ,/ ,\\ ,| ,? ,# ,>,<');
+  factory IndexException.invalidIndex() =>
+      IndexException('missing / invalid index');
 
   @override
   String toString() => message;
