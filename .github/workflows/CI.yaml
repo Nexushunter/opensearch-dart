@@ -20,7 +20,7 @@ jobs:
       - name: Run Tests
         run: make ui-tests
       - name: Archive coverage artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: unit-test-coverage.info
           path: ui/coverage/lcov.info
