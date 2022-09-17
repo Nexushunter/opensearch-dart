@@ -1,5 +1,7 @@
 import 'package:opensearch_dart/src/api/index/enums.dart';
 
+import '../common/responses.dart';
+
 class GetIndexResponse {
   final String indexName;
 
