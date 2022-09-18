@@ -9,6 +9,8 @@ environment:
 dependencies:
   dio: ^4.0.6
   logging: any
+  aws_common: ^0.1.0
+  aws_signature_v4: ^0.1.0
 #   path: ^1.8.0
 
 dev_dependencies:

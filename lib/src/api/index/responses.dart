@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:opensearch_dart/src/api/index/enums.dart';
 
 import '../common/responses.dart';
@@ -28,6 +30,11 @@ class GetIndexResponse {
     this.mappings = const {},
     this.settings = const {},
   });
+
+  @override
+  String toString() {
+    return '$indexName: alias: ${jsonEncode(aliasMapping)}, mappings: ${jsonEncode(mappings)}';
+  }
 }
 
 class CloseIndexResponse {

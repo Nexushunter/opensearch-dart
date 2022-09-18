@@ -2,7 +2,6 @@ import 'enums.dart';
 import 'models.dart';
 
 /// Settings you can change at any time, including at index creation.
-
 class DynamicIndexSettings {
   /// The number of replica shards each primary shard should have.
   ///
@@ -114,30 +113,48 @@ class DynamicIndexSettings {
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
-      'index.number_of_replicas': numberOfReplicas,
-      if (!autoExpandReplicas.disabled)
-        'index.auto_expand_replicas':
-            '${autoExpandReplicas.lowerLimit}-${autoExpandReplicas.upperLimit}',
-      'index.search.idle.after': '${searchIdleAfter.inSeconds}s',
-      'index.refresh_interval': '${refreshInterval.inSeconds}s',
-      'index.max_result_window': maxResultWindow,
-      'index.max_inner_result_window': maxInnerResultWindow,
-      'index.max_rescore_window': maxRescoreWindow,
-      'index.max_docvalue_fields_search': maxDocValueFieldsSearch,
-      'index.max_script_fields': maxScriptFields,
-      'index.max_ngram_diff': maxNGramDiff,
-      'index.max_shingle_diff': maxShingleDiff,
-      'index.max_refresh_listeners': maxRefreshListeners,
-      'index.analyze.max_token_count': analyzeMaxTokenCount,
-      'index.highlight.max_analyzed_offset': highlightMaxAnalyzedOffset,
-      'index.max_terms_count': maxTermsCount,
-      'index.max_regex_length': maxRegexLength,
-      'index.query.default_field': queryDefaultField,
-      'index.routing.allocation.enable': routingAllocationEnable.lowercase(),
-      'index.routing.rebalance.enable': routingReBalanceOption.lowercase(),
-      'index.gc_deletes': '${gcDeletes.inSeconds}s',
-      'index.default_pipeline': defaultPipeline,
-      'index.final_pipeline': finalPipeline,
+      'index': {
+        'number_of_replicas': numberOfReplicas,
+        'refresh_interval': '${refreshInterval.inSeconds}s',
+        'max_result_window': maxResultWindow,
+        'max_inner_result_window': maxInnerResultWindow,
+        'max_rescore_window': maxRescoreWindow,
+        'max_docvalue_fields_search': maxDocValueFieldsSearch,
+        'max_script_fields': maxScriptFields,
+        'max_ngram_diff': maxNGramDiff,
+        'max_shingle_diff': maxShingleDiff,
+        'max_refresh_listeners': maxRefreshListeners,
+        'max_terms_count': maxTermsCount,
+        'max_regex_length': maxRegexLength,
+        'gc_deletes': '${gcDeletes.inSeconds}s',
+        'default_pipeline': defaultPipeline,
+        'final_pipeline': finalPipeline,
+        if (!autoExpandReplicas.disabled)
+          'auto_expand_replicas':
+              '${autoExpandReplicas.lowerLimit}-${autoExpandReplicas.upperLimit}',
+        "analyze": {
+          'max_token_count': analyzeMaxTokenCount,
+        },
+        'highlight': {
+          'max_analyzed_offset': highlightMaxAnalyzedOffset,
+        },
+        'routing': {
+          'rebalance': {
+            'enable': routingReBalanceOption.lowercase(),
+          },
+          'allocation': {
+            'enable': routingAllocationEnable.lowercase(),
+          }
+        },
+        'query': {
+          'default_field': queryDefaultField,
+        },
+        'search': {
+          'idle': {
+            'after': '${searchIdleAfter.inSeconds}s',
+          }
+        }
+      },
     };
   }
 }
@@ -186,22 +203,43 @@ class StaticIndexSettings {
     this.softDeleteRetentionLeasePeriod = const Duration(hours: 12),
     this.numberOfShards = 1,
     this.shardCheckOnStart = ShardCheckOptions.False,
-    // TODO: Should this be 1?
-    this.numberOfRoutingShards = 0,
+    this.numberOfRoutingShards = 1,
     this.routingPartitionSize = 1,
   }) : assert(numberOfShards >= 1 && routingPartitionSize <= numberOfShards);
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
-      'index.codec': codec.lowercase(),
-      'index.hidden': hidden,
-      'index.load_fixed_bitset_filters_eagerly': loadFixedBitsetFiltersEagerly,
-      'index.number_of_routing_shards': numberOfRoutingShards,
-      'index.number_of_shards': numberOfShards,
-      'index.routing_partition_size': routingPartitionSize,
-      'index.shard.check_on_startup': shardCheckOnStart.lowercase(),
-      'index.soft_deletes.retention_period':
-          '${softDeleteRetentionLeasePeriod.inSeconds}s',
+      'index': {
+        'codec': codec.lowercase(),
+        'hidden': hidden,
+        'load_fixed_bitset_filters_eagerly': loadFixedBitsetFiltersEagerly,
+        'number_of_routing_shards': numberOfRoutingShards,
+        'number_of_shards': numberOfShards,
+        'routing_partition_size': routingPartitionSize,
+        'soft_deletes': {
+          'retention_lease': {
+            'period': '${softDeleteRetentionLeasePeriod.inSeconds}s',
+          },
+        },
+        'shard': {
+          'check_on_startup': shardCheckOnStart.lowercase(),
+        },
+      }
     };
   }
+}
+
+Map<String, dynamic> mergeStaticAndDynamicSettings(
+    StaticIndexSettings staticIndexSettings,
+    DynamicIndexSettings dynamicIndexSettings) {
+  var dJson = dynamicIndexSettings.toJson();
+  var sJson = staticIndexSettings.toJson();
+  return dJson.update(
+    'index',
+    ifAbsent: () => sJson['index'],
+    (value) {
+      value as Map<String, dynamic>;
+      return value..addAll(sJson['index']);
+    },
+  );
 }

@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:logging/logging.dart';
+import 'package:opensearch_dart/src/api/common/api_client.dart';
 import 'package:opensearch_dart/src/api/index/index_settings.dart';
 import 'package:opensearch_dart/src/api/index/responses.dart';
 
@@ -11,11 +12,9 @@ import 'enums.dart';
 import 'exceptions.dart';
 import 'mapping.dart';
 
-class IndexClient {
-  // TODO: Create OpenSearchClient
-  late Dio client;
+class IndexClient extends ApiClient {
   static final _log = Logger('IndexClient');
-  IndexClient({required this.client});
+  IndexClient({required super.client, super.signer});
 
   /// Verify the given [name] follow expected naming conventions.
   void verifyNaming(String name) {
@@ -30,21 +29,22 @@ class IndexClient {
 
   /// Creates an [Index] in the cluster.
   ///
-  /// [name] The name of the index to be created.
+  /// [index] The name of the index to be created.
   /// [waitForActiveShards]
   /// [alias]
-  FutureOr<AcknowledgeResponse> createIndex({
-    required String name,
+  FutureOr<AcknowledgeResponse> create({
+    required String index,
     int waitForActiveShards = 1,
     Duration masterNodeTimeout = const Duration(seconds: 30),
     Duration timeout = const Duration(seconds: 30),
     String? alias,
     StaticIndexSettings staticSettings = const StaticIndexSettings(),
     DynamicIndexSettings dynamicSettings = const DynamicIndexSettings(),
-    IndexMapping mappings = const IndexMapping(mappings: <String, FieldType>{}),
+    IndexMapping mappings = const IndexMapping(),
   }) async {
-    verifyNaming(name);
-    if ((await exists(index: name)).acknowledged) {
+    verifyNaming(index);
+    var indexExists = await exists(index: index);
+    if (indexExists.acknowledged) {
       throw IndexException.conflict();
     }
 
@@ -52,37 +52,43 @@ class IndexClient {
       waitForActiveShards = 1;
     }
 
-    // TODO: This mapping is causing things to break. The settings more than
-    //  likely need to be expanded instead of being flattened.
-    var encoded = jsonEncode(<String, dynamic>{
-      'mappings': {
-        "properties": <String, dynamic>{}..addAll(mappings.toJson()),
-      },
-      "settings": <String, dynamic>{}
-        ..addAll(staticSettings.toJson())
-        ..addAll(dynamicSettings.toJson()),
-      'aliases': {
-        if (alias != null) alias: {},
-      },
-    });
+    var settings = mergeStaticAndDynamicSettings(
+      staticSettings,
+      dynamicSettings,
+    );
 
+    RequestOptions requestOptions = RequestOptions(
+      path: index,
+      method: 'PUT',
+      queryParameters: <String, dynamic>{
+        'wait_for_active_shards': '$waitForActiveShards',
+        'master_timeout': '${masterNodeTimeout.inSeconds}s',
+        'timeout': '${timeout.inSeconds}s',
+      },
+      baseUrl: client.options.baseUrl,
+      data: <String, dynamic>{
+        'mappings': {
+          "properties": mappings.toJson(),
+        },
+        "settings": settings,
+        'aliases': {
+          if (alias != null) alias: {},
+        },
+      },
+    );
+
+    var signed = await signer.sign(requestOptions, client);
     return await client
-        .put(
-          name,
-          // data: encoded,
-          queryParameters: <String, dynamic>{
-            'wait_for_active_shards': '$waitForActiveShards',
-          },
-        )
+        .fetch(signed)
         .timeout(timeout)
         .onError(onErrorResponse(endpoint: 'create'))
         .then(
-          (resp) {
-            return AcknowledgeResponse(
-              acknowledged: resp.statusCode! >= 200 && resp.statusCode! < 300,
-            );
-          },
+      (resp) {
+        return AcknowledgeResponse(
+          acknowledged: resp.statusCode! >= 200 && resp.statusCode! < 300,
         );
+      },
+    );
   }
 
   /// Verify whether or not an index already exists.
@@ -112,8 +118,18 @@ class IndexClient {
     bool local = false,
   }) async {
     // TODO: Handle query params
+
+    var signed = await signer.sign(
+        RequestOptions(
+          path: index,
+          method: 'HEAD',
+          baseUrl: client.options.baseUrl,
+          headers: client.options.headers,
+        ),
+        client);
+
     return await client
-        .head(index)
+        .fetch(signed)
         .onError(onErrorResponse(endpoint: 'exists'))
         .then((value) {
       return AcknowledgeResponse(
@@ -151,7 +167,7 @@ class IndexClient {
   }
 
   /// Fetches information about an index.
-  FutureOr<GetIndexResponse> getIndex({
+  FutureOr<GetIndexResponse> get({
     required String index,
     bool allowNoIndices = true,
     List<ExpandWildCardOption> expandWildCardOption = const [
@@ -172,12 +188,10 @@ class IndexClient {
         .timeout(masterTimeout)
         .onError(onErrorResponse(endpoint: 'getIndex'))
         .then((resp) {
-      var decoded = jsonDecode(resp.data) as Map<String, dynamic>;
+      var decoded = resp.data as Map<String, dynamic>;
 
       decoded = decoded[index] as Map<String, dynamic>;
-
       var mappings = <String, FieldType>{};
-      // TODO: Loop through and pull out the mapping information.
 
       return GetIndexResponse(
         indexName: index,
@@ -284,14 +298,21 @@ class IndexClient {
     required String endpoint,
   }) {
     return (error, stack) {
-      _log.finest('Failed to make index request: ${error.message}\n$stack');
-
-      return Response(
-        requestOptions: error.requestOptions,
-        statusCode: error.response?.statusCode ?? 500,
-        statusMessage: error.response?.statusMessage ??
-            '${error.message}\n $stack', //'Unable make index request',
-      );
+      switch (error.response?.statusCode!) {
+        case 401:
+          throw HttpException.unauthorized();
+        case 403:
+          throw HttpException.forbidden();
+        case 400:
+          throw HttpException.badRequest();
+        default:
+          return Response(
+            requestOptions: error.requestOptions,
+            statusCode: error.response?.statusCode ?? 500,
+            statusMessage: error.response?.statusMessage ??
+                '${error.message}\n $stack', //'Unable make index request',
+          );
+      }
     };
   }
 }

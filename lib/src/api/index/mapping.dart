@@ -3,12 +3,14 @@ import 'enums.dart';
 class IndexMapping {
   final Map<String, FieldType> mappings;
 
-  const IndexMapping({required this.mappings});
-
-  factory IndexMapping.empty() =>
-      IndexMapping(mappings: const <String, FieldType>{});
+  const IndexMapping({this.mappings = const <String, FieldType>{}});
 
   Map<String, dynamic> toJson() {
-    return <String, dynamic>{};
+    return <String, dynamic>{
+      for (var entry in mappings.entries)
+        entry.key: {
+          'type': entry.value.lowercase(),
+        },
+    };
   }
 }
