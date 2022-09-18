@@ -12,8 +12,7 @@ Module APIs:
   - [x] Create
   - [x] Delete
   - [x] Exists
-  - [ ] Get Index
-    - [ ] Parse out mappings
+  - [X] Get Index
   - [x] Open Index
   - [x] Close Index
   - [x] Shrink Index
