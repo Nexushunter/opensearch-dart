@@ -119,7 +119,14 @@ class IndexClient extends ApiClient {
     bool ignoreUnavailable = false,
     bool local = false,
   }) async {
-    // TODO: Handle query params
+    var params = <String, dynamic>{
+      'flat_settings': flatSettings,
+      'include_defaults': includeDefaults,
+      'local': local,
+      'ignore_unavailable': ignoreUnavailable,
+      'expand_wildcards':
+          '[${expandWildCardOptions.map((e) => e.name).reduce((value, element) => '$value,$element')}',
+    };
 
     var signed = await signer.sign(
         RequestOptions(
@@ -127,6 +134,7 @@ class IndexClient extends ApiClient {
           method: 'HEAD',
           baseUrl: client.options.baseUrl,
           headers: client.options.headers,
+          queryParameters: params,
         ),
         client);
 
@@ -158,9 +166,15 @@ class IndexClient extends ApiClient {
     Duration masterTimeout = const Duration(seconds: 30),
     Duration timeout = const Duration(seconds: 30),
   }) async {
-    // TODO: Handle query Params
+    var params = <String, dynamic>{
+      'ignore_unavailable': ignoreUnavailable,
+      'expand_wildcards':
+          '[${expandWildCardOptions.map((e) => e.name).reduce((value, element) => '$value,$element')}',
+      'master_timeout': '${masterTimeout.inSeconds}s',
+      'timeout': '${timeout.inSeconds}s',
+    };
     return await client
-        .delete(index)
+        .delete(index, queryParameters: params)
         .timeout(timeout)
         .onError(onErrorResponse(endpoint: 'delete'))
         .then(
@@ -187,7 +201,7 @@ class IndexClient extends ApiClient {
   FutureOr<GetIndexResponse> get({
     required String index,
     bool allowNoIndices = true,
-    List<ExpandWildCardOption> expandWildCardOption = const [
+    List<ExpandWildCardOption> expandWildCardOptions = const [
       ExpandWildCardOption.open
     ],
     bool flatSettings = false,
@@ -201,9 +215,19 @@ class IndexClient extends ApiClient {
     }
 
     // TODO: process query params map
+    var params = <String, dynamic>{
+      'allow_no_indices': allowNoIndices,
+      'flat_settings': flatSettings,
+      'include_defaults': includeDefaults,
+      'local': local,
+      'ignore_unavailable': ignoreUnavailable,
+      'expand_wildcards':
+          '[${expandWildCardOptions.map((e) => e.name).reduce((value, element) => '$value,$element')}',
+      'master_timeout': '${masterTimeout.inSeconds}s',
+    };
 
     return await client
-        .get(index)
+        .get(index, queryParameters: params)
         .timeout(masterTimeout)
         .onError(onErrorResponse(endpoint: 'getIndex'))
         .then((resp) {
@@ -245,10 +269,18 @@ class IndexClient extends ApiClient {
     Duration masterTimeout = const Duration(seconds: 30),
     Duration timeout = const Duration(seconds: 30),
   }) async {
-    // TODO: Handle Query Params
-
+    var params = <String, dynamic>{
+      'ignore_unavailable': ignoreUnavailable,
+      'allow_no_indices': allowNoIndices,
+      'wait_for_active_shards': waitForActiveShards,
+      'master_timeout': '${masterTimeout.inSeconds}s',
+      'timeout': '${timeout.inSeconds}s',
+    };
     return await client
-        .post('${indexNames.reduce((a, b) => '$a,$b')}/_close')
+        .post(
+          '${indexNames.reduce((a, b) => '$a,$b')}/_close',
+          queryParameters: params,
+        )
         .onError(onErrorResponse(endpoint: 'close'))
         .then((value) {
       var decoded = jsonDecode(value.data);
@@ -290,10 +322,19 @@ class IndexClient extends ApiClient {
     Duration masterTimeout = const Duration(seconds: 30),
     Duration timeout = const Duration(seconds: 30),
   }) async {
-    // TODO: Handle query Params
+    var params = <String, dynamic>{
+      'ignore_unavailable': ignoreUnavailable,
+      'allow_no_indices': allowNoIndices,
+      'wait_for_active_shards': waitForActiveShards,
+      'master_timeout': '${masterTimeout.inSeconds}s',
+      'timeout': '${timeout.inSeconds}s',
+    };
 
     return await client
-        .post('${indexNames.reduce((a, b) => '$a,$b')}/_open')
+        .post(
+          '${indexNames.reduce((a, b) => '$a,$b')}/_open',
+          queryParameters: params,
+        )
         .onError(onErrorResponse(endpoint: 'open'))
         .then((value) {
       var decoded = jsonDecode(value.data);
@@ -315,9 +356,25 @@ class IndexClient extends ApiClient {
     });
   }
 
+  /// Moves all data in [index] into [target] with fewer primary shards
+  ///
+  /// [index] The index to shrink.
+  /// [targetIndex] The target index to shrink source into.
+  /// [maxPrimaryShardSizeBytes] Sets the maximum size of a primary shard in the
+  ///   target index. For example, if this field is set to 100 GB, and the source
+  ///   index’s primary shards total to 300 GB, then the target index has 3
+  ///   primary shards of 100 GB each.
+  /// [alias] Sets an alias for the target index. Can have the fields:
+  ///   - filter
+  ///   - index_routing
+  ///   - is_hidden
+  ///   - is_write_index
+  ///   - routing
+  ///   - search_routing
   FutureOr<AcknowledgeResponse> shrinkIndex({
     required String index,
     required String target,
+    String? alias, // TODO: Use alias settings class instead
     int waitForActiveShards = 1,
     Duration masterTimeout = const Duration(seconds: 30),
     Duration timeout = const Duration(seconds: 30),
@@ -327,12 +384,26 @@ class IndexClient extends ApiClient {
   }) async {
     verifyNaming(index);
     verifyNaming(target);
+    var params = <String, dynamic>{
+      'wait_for_active_shards': waitForActiveShards,
+      'master_timeout': '${masterTimeout.inSeconds}s',
+      'timeout': '${timeout.inSeconds}s',
+    };
 
-    // TODO: Parse body for request
-    // TODO: handle query params
+    // TODO: Handle settings???
+    // TODO: Alias handling
+    var body = <String, dynamic>{
+      'max_primary_shard_size': maxPrimaryShardSizeBytes,
+      'settings': mergeStaticAndDynamicSettings(
+          staticIndexSettings, dynamicIndexSettings),
+    };
 
     return await client
-        .post('$index/_shrink/$target')
+        .post(
+          '$index/_shrink/$target',
+          queryParameters: params,
+          data: body,
+        )
         .timeout(masterTimeout)
         .onError(onErrorResponse(endpoint: 'shrink'))
         .then((value) => AcknowledgeResponse());
