@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:opensearch_dart/src/api/index/client.dart';
-import 'package:opensearch_dart/src/api/index/enums.dart';
 import 'package:opensearch_dart/src/api/index/exceptions.dart';
 import 'package:test/test.dart';
 
@@ -126,8 +125,6 @@ void main() async {
       });
     });
     group('Get Index', () {
-      tearDown(() => iClient.delete(
-          index: 'get-*', expandWildCardOptions: [ExpandWildCardOption.all]));
       test('Fails', () async {
         try {
           await iClient.get(index: 'get-fails');

@@ -62,11 +62,11 @@ class IndexClient extends ApiClient {
     RequestOptions requestOptions = RequestOptions(
       path: index,
       method: 'PUT',
-      queryParameters: <String, dynamic>{
-        'wait_for_active_shards': '$waitForActiveShards',
-        'master_timeout': '${masterNodeTimeout.inSeconds}s',
-        'timeout': '${timeout.inSeconds}s',
-      },
+      // queryParameters: <String, dynamic>{
+      //   'wait_for_active_shards': '$waitForActiveShards',
+      //   'master_timeout': '${masterNodeTimeout.inSeconds}s',
+      //   'timeout': '${timeout.inSeconds}s',
+      // },
       baseUrl: client.options.baseUrl,
       data: <String, dynamic>{
         'mappings': {
@@ -119,14 +119,14 @@ class IndexClient extends ApiClient {
     bool ignoreUnavailable = false,
     bool local = false,
   }) async {
-    var params = <String, dynamic>{
-      'flat_settings': flatSettings,
-      'include_defaults': includeDefaults,
-      'local': local,
-      'ignore_unavailable': ignoreUnavailable,
-      'expand_wildcards':
-          '[${expandWildCardOptions.map((e) => e.name).reduce((value, element) => '$value,$element')}',
-    };
+    // var params = <String, dynamic>{
+    //   'flat_settings': flatSettings,
+    //   'include_defaults': includeDefaults,
+    //   'local': local,
+    //   'ignore_unavailable': ignoreUnavailable,
+    //   'expand_wildcards':
+    //       '[${expandWildCardOptions.map((e) => e.name).reduce((value, element) => '$value,$element')}',
+    // };
 
     var signed = await signer.sign(
         RequestOptions(
@@ -134,7 +134,7 @@ class IndexClient extends ApiClient {
           method: 'HEAD',
           baseUrl: client.options.baseUrl,
           headers: client.options.headers,
-          queryParameters: params,
+          // queryParameters: params,
         ),
         client);
 
@@ -215,19 +215,22 @@ class IndexClient extends ApiClient {
     }
 
     // TODO: process query params map
-    var params = <String, dynamic>{
-      'allow_no_indices': allowNoIndices,
-      'flat_settings': flatSettings,
-      'include_defaults': includeDefaults,
-      'local': local,
-      'ignore_unavailable': ignoreUnavailable,
-      'expand_wildcards':
-          '[${expandWildCardOptions.map((e) => e.name).reduce((value, element) => '$value,$element')}',
-      'master_timeout': '${masterTimeout.inSeconds}s',
-    };
+    // var params = <String, dynamic>{
+    //   'allow_no_indices': allowNoIndices,
+    //   'flat_settings': flatSettings,
+    //   'include_defaults': includeDefaults,
+    //   'local': local,
+    //   'ignore_unavailable': ignoreUnavailable,
+    //   'expand_wildcards':
+    //       '[${expandWildCardOptions.map((e) => e.name).reduce((value, element) => '$value,$element')}',
+    //   'master_timeout': '${masterTimeout.inSeconds}s',
+    // };
 
     return await client
-        .get(index, queryParameters: params)
+        .get(
+          index,
+          // queryParameters: params,
+        )
         .timeout(masterTimeout)
         .onError(onErrorResponse(endpoint: 'getIndex'))
         .then((resp) {
