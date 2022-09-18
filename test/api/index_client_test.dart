@@ -9,9 +9,6 @@ void main() async {
     Dio baseClient = Dio(BaseOptions(baseUrl: 'http://localhost:9200/'));
     var iClient = IndexClient(client: baseClient);
     group('Create Index', () {
-      // Clean up previous indices
-      setUp(() async => await iClient.delete(index: '*'));
-
       test('Successfully', () async {
         expect((await iClient.create(index: 'name')).acknowledged, isTrue);
       });

@@ -166,15 +166,18 @@ class IndexClient extends ApiClient {
     Duration masterTimeout = const Duration(seconds: 30),
     Duration timeout = const Duration(seconds: 30),
   }) async {
-    var params = <String, dynamic>{
-      'ignore_unavailable': ignoreUnavailable,
-      'expand_wildcards':
-          '[${expandWildCardOptions.map((e) => e.name).reduce((value, element) => '$value,$element')}',
-      'master_timeout': '${masterTimeout.inSeconds}s',
-      'timeout': '${timeout.inSeconds}s',
-    };
+    // var params = <String, dynamic>{
+    //   'ignore_unavailable': ignoreUnavailable,
+    //   'expand_wildcards':
+    //       '[${expandWildCardOptions.map((e) => e.name).reduce((value, element) => '$value,$element')}',
+    //   'master_timeout': '${masterTimeout.inSeconds}s',
+    //   'timeout': '${timeout.inSeconds}s',
+    // };
     return await client
-        .delete(index, queryParameters: params)
+        .delete(
+          index,
+          // queryParameters: params,
+        )
         .timeout(timeout)
         .onError(onErrorResponse(endpoint: 'delete'))
         .then(
