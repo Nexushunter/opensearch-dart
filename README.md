@@ -76,21 +76,20 @@ Module APIs:
   - [ ] Delete by query
   - [ ] Update by query
   - [ ] Reindex
-
-Unorganized:
-- Search
-    - Single
-    - Multi
-- Alias
-- Cluster
-  - health
-  - stats
-  - allocation explain
-  - remote information
-- Tasks
-- Scroll
-- Explain
-- Count
+- [ ] Search
+- [ ] Alias
+  - [ ] Add
+  - [ ] Remove
+  - [ ] RemoveIndex
+- [ ] Cluster
+  - [ ] health
+  - [ ] stats
+  - [ ] allocation explain
+  - [ ] remote information
+- [ ] Tasks
+- [ ] Scroll
+- [ ] Explain
+- [ ] Count
 
 ## Getting started
 
@@ -101,14 +100,11 @@ Prerequisites:
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
-
-```dart
-const like = 'sample';
-```
+See [example](https://github.com/Nexushunter/opensearch-dart/blob/main/example/opensearch_dart_example.dart)
 
 ## Additional information
+
+[Opensearch](https://opensearch.org)
 
 TODO: Tell users more about the package: where to find more information, how to 
 contribute to the package, how to file issues, what response they can expect 
