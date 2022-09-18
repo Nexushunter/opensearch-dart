@@ -3,15 +3,16 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:logging/logging.dart';
-import 'package:opensearch_dart/src/api/common/api_client.dart';
-import 'package:opensearch_dart/src/api/index/index_settings.dart';
-import 'package:opensearch_dart/src/api/index/responses.dart';
 
+import '../common/api_client.dart';
 import '../common/responses.dart';
 import 'enums.dart';
 import 'exceptions.dart';
+import 'index_settings.dart';
 import 'mapping.dart';
+import 'responses.dart';
 
+/// A client for operating on Indices found within the cluster.
 class IndexClient extends ApiClient {
   static final _log = Logger('IndexClient');
   IndexClient({required super.client, super.signer});
@@ -168,6 +169,21 @@ class IndexClient extends ApiClient {
   }
 
   /// Fetches information about an index.
+  ///
+  /// [allowNoIndices] Whether to ignore wildcards that don’t match any indices.
+  /// [expandWildCardOptions] Expands wildcard expressions to different indices.
+  /// [flatSettings] Whether to return settings in the flat form, which can
+  ///   improve readability, especially for heavily nested settings. For example,
+  ///   the flat form of “index”: { “creation_date”: “123456789” } is
+  ///   “index.creation_date”: “123456789”
+  /// [includeDefaults] Whether to include default settings as part of the response.
+  ///   This parameter is useful for identifying the names and current values of
+  ///   settings you want to update.
+  /// [ignoreUnavailable] If true, OpenSearch does not search for missing or
+  ///   closed indices.
+  /// [local] Whether to return information from only the local node instead of
+  ///   from the master node.
+  /// [masterTimeout] The time to wait for the master node to connect.
   FutureOr<GetIndexResponse> get({
     required String index,
     bool allowNoIndices = true,
@@ -183,6 +199,8 @@ class IndexClient extends ApiClient {
     if (!(await exists(index: index)).acknowledged) {
       throw IndexException.invalidIndex();
     }
+
+    // TODO: process query params map
 
     return await client
         .get(index)
@@ -210,6 +228,15 @@ class IndexClient extends ApiClient {
     });
   }
 
+  /// Close all the given [indexNames].
+  ///
+  /// [indexNames] The name(s) of the indices to be closed.
+  /// [waitForActiveShards] The number of shards to wait for to become active
+  ///   before completing the request.
+  /// [ignoreUnavailable] If true, OpenSearch does not search for missing or
+  ///   closed indices.
+  /// [masterTimeout] The time to wait for the master node to connect.
+  /// [timeout] How long to wait for the response to return.
   FutureOr<CloseIndexResponse> close({
     List<String> indexNames = const ['*'],
     bool allowNoIndices = true,
@@ -246,6 +273,15 @@ class IndexClient extends ApiClient {
     });
   }
 
+  /// Opens the given closed [indexNames].
+  ///
+  /// [indexNames] The name(s) of the indices to be opened.
+  /// [waitForActiveShards] The number of shards to wait for to become active
+  ///   before completing the request.
+  /// [ignoreUnavailable] If true, OpenSearch does not search for missing or
+  ///   closed indices.
+  /// [masterTimeout] The time to wait for the master node to connect.
+  /// [timeout] How long to wait for the response to return.
   FutureOr<ShardsAcknowledgedResponse> open({
     List<String> indexNames = const ['*'],
     bool allowNoIndices = true,
