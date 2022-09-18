@@ -30,8 +30,9 @@ class IndexClient extends ApiClient {
   /// Creates an [Index] in the cluster.
   ///
   /// [index] The name of the index to be created.
-  /// [waitForActiveShards]
-  /// [alias]
+  /// [waitForActiveShards] The number of shards to wait for to become active
+  ///   before completing the request.
+  /// [alias] THe alias to use with the index.
   FutureOr<AcknowledgeResponse> create({
     required String index,
     int waitForActiveShards = 1,
@@ -188,15 +189,22 @@ class IndexClient extends ApiClient {
         .timeout(masterTimeout)
         .onError(onErrorResponse(endpoint: 'getIndex'))
         .then((resp) {
-      var decoded = resp.data as Map<String, dynamic>;
+      // Grab the first entry with either the matching index name or the matching alias.
+      var decoded = (resp.data as Map<String, dynamic>).entries.firstWhere(
+            (element) =>
+                element.key == index ||
+                (element.value['aliases'] as Map<String, dynamic>)
+                    .keys
+                    .contains(index),
+          );
 
-      decoded = decoded[index] as Map<String, dynamic>;
+      // TODO: Check if the index is an alias -> transform the response
       var mappings = <String, FieldType>{};
 
       return GetIndexResponse(
-        indexName: index,
-        aliasMapping: decoded['aliases'],
-        settings: decoded['settings'],
+        indexName: decoded.key,
+        aliasMapping: decoded.value['aliases'],
+        settings: decoded.value['settings'],
         mappings: mappings,
       );
     });
