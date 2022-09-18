@@ -1,4 +1,5 @@
 # OpenSearch For Dart & Flutter
+[![CI](https://github.com/Nexushunter/opensearch-dart/actions/workflows/CI.yaml/badge.svg?branch=main)](https://github.com/Nexushunter/opensearch-dart/actions/workflows/CI.yaml)
 
 This library is intended to be used in both [Flutter](https://flutter.dev) and [Dart](https://dart.dev) projects alike.
 
