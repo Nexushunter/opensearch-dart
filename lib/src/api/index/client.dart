@@ -480,20 +480,16 @@ class IndexClient extends ApiClient {
               print(value.data[index]);
               var settingsPayload = value.data[index]['settings'];
               uuid = settingsPayload['index.uuid'];
-              createDate = settingsPayload['index.creation_date'];
-              version = settingsPayload['index.version.created'] as int;
+              createDate =
+                  int.tryParse(settingsPayload['index.creation_date']) ?? 0;
+              version =
+                  int.tryParse(settingsPayload['index.version.created']) ?? 0;
               providedName = settingsPayload['index.provided_name'];
 
-              staticIndexSettings = StaticIndexSettings(
-                hidden: settingsPayload['hidden'] as bool,
-                loadFixedBitsetFiltersEagerly:
-                    settingsPayload['index.load_fixed_bitset_filters_eagerly']
-                        as bool,
-                codec: IndexCodec.values.firstWhere(
-                  (element) => element.name == settingsPayload['index.codec'],
-                  orElse: () => IndexCodec.Default,
-                ),
-              );
+              staticIndexSettings =
+                  StaticIndexSettings.fromMap(settingsPayload);
+              dynamicIndexSettings =
+                  DynamicIndexSettings.fromMap(settingsPayload);
             }
 
             // TOOD: Stop defaulting

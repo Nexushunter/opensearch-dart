@@ -134,14 +134,18 @@ class DynamicIndexSettings {
 
   factory DynamicIndexSettings.fromMap(Map<String, dynamic> map) =>
       DynamicIndexSettings(
-        numberOfReplicas: map['index.number_of_replicas'] as int,
+        numberOfReplicas: int.tryParse(map['index.number_of_replicas']) ?? 0,
         refreshInterval: Duration(
-            seconds: ((map['index.refresh_interval'] as String).substring(
-          0,
-          (map['index.refresh_interval'] as String).length - 1,
-        )) as int),
-        maxResultWindow: map['index.max_result_window'] as int,
-        maxInnerResultWindow: map['index.max_inner_result_window'] as int,
+          seconds: int.parse(
+            map['index.refresh_interval'].substring(
+              0,
+              map['index.refresh_interval'].length - 1,
+            ),
+          ),
+        ),
+        maxResultWindow: int.tryParse(map['index.max_result_window']) ?? 0,
+        maxInnerResultWindow:
+            int.tryParse(map['index.max_inner_result_window']) ?? 0,
       );
 
   Map<String, dynamic> toJson() {
@@ -243,25 +247,25 @@ class StaticIndexSettings {
   factory StaticIndexSettings.fromMap(Map<String, dynamic> mapping) =>
       StaticIndexSettings(
         softDeleteRetentionLeasePeriod: Duration(
-          seconds:
-              (mapping['index.soft_deletes.retention_lease.period'] as String)
-                  .substring(
-                      0,
-                      (mapping['index.soft_deletes.retention_lease.period']
-                                  as String)
-                              .length -
-                          1) as int,
+          seconds: int.parse(
+            mapping['index.soft_deletes.retention_lease.period'].substring(
+                0,
+                mapping['index.soft_deletes.retention_lease.period'].length -
+                    1),
+          ),
         ),
-        hidden: mapping['index.hidden'],
+        hidden: mapping['index.hidden'].toLowerCase() == 'true',
         codec: IndexCodec.values.firstWhere(
             (element) => element.lowercase() == mapping['index.codec']),
         loadFixedBitsetFiltersEagerly:
-            mapping['index.load_fixed_bitset_filters_eagerly'] as bool,
-        numberOfRoutingShards: mapping['index.number_of_routing_shards'] as int,
-        numberOfShards: mapping['index.number_of_shards'] as int,
+            mapping['index.load_fixed_bitset_filters_eagerly'].toLowerCase() ==
+                'true',
+        numberOfRoutingShards:
+            int.tryParse(mapping['index.number_of_routing_shards'] ?? '') ?? 0,
+        numberOfShards: int.parse(mapping['index.number_of_shards']),
         shardCheckOnStart: ShardCheckOptions.values.firstWhere(
           (element) =>
-              element.lowercase() == mapping['index.shard_check_on_start'],
+              element.lowercase() == mapping['index.shard.check_on_startup'],
         ),
       );
 
