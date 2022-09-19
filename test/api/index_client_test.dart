@@ -12,15 +12,15 @@ void main() async {
     var iClient = IndexClient(client: baseClient);
     group('Create Index', () {
       test('Successfully', () async {
-        expect((await iClient.create(index: 'name')).acknowledged, isTrue);
+        expect((await iClient.create(index: Uuid().v4())).acknowledged, isTrue);
       });
       group('Fails', () {
         test('Exists', () async {
-          expect((await iClient.create(index: 'fails-exists')).acknowledged,
-              isTrue);
+          final id = Uuid().v4();
+          expect((await iClient.create(index: id)).acknowledged, isTrue);
 
           try {
-            await iClient.create(index: 'fails-exists');
+            await iClient.create(index: id);
           } on IndexException catch (e) {
             expect(e, IndexException.conflict());
           }
@@ -110,32 +110,34 @@ void main() async {
           }
         });
       });
-    }, skip: true);
+    });
     group('Delete Index', () {
       test('Successfully', () async {
-        final cResp = await iClient.create(index: 'delete-successfully');
+        final id = Uuid().v4();
+        final cResp = await iClient.create(index: id);
         expect(cResp.acknowledged, isTrue);
-        final dResp = await iClient.delete(index: 'delete-successfully');
+        final dResp = await iClient.delete(index: id);
         expect(dResp.acknowledged, isTrue);
       });
       test('Fails', () async {
-        final dResp = await iClient.delete(index: 'delete-fails');
+        final dResp = await iClient.delete(index: Uuid().v4());
         expect(dResp.acknowledged, isFalse);
       });
-    }, skip: true);
+    });
     group('Get Index', () {
       test('Fails', () async {
         try {
-          await iClient.get(index: 'get-fails');
+          await iClient.get(index: Uuid().v4());
         } on IndexException catch (ex) {
           expect(ex, IndexException.invalidIndex());
         }
       });
       test('Succeeds', () async {
-        final cResp = await iClient.create(index: 'get-succeeds');
+        final id = Uuid().v4();
+        final cResp = await iClient.create(index: id);
         expect(cResp.acknowledged, isTrue);
-        final gResp = await iClient.get(index: 'get-succeeds');
-        expect(gResp.indexName, 'get-succeeds');
+        final gResp = await iClient.get(index: id);
+        expect(gResp.indexName, id);
         expect(gResp.mappings, const {});
         // Todo: Handle settings
         // expect(
@@ -144,19 +146,20 @@ void main() async {
         //         StaticIndexSettings(), DynamicIndexSettings()));
         expect(gResp.aliasMapping, const {});
       });
-    }, skip: true);
+    });
     group('Index exists', () {
       test('fails', () async {
-        final eResp = await iClient.exists(index: 'exists-fails');
+        final eResp = await iClient.exists(index: Uuid().v4());
         expect(eResp.acknowledged, isFalse);
       });
       test('Successfully', () async {
-        final cResp = await iClient.create(index: 'exists-successfully');
+        final id = Uuid().v4();
+        final cResp = await iClient.create(index: id);
         expect(cResp.acknowledged, isTrue);
-        final eResp = await iClient.exists(index: 'exists-successfully');
+        final eResp = await iClient.exists(index: id);
         expect(eResp.acknowledged, isTrue);
       });
-    }, skip: true);
+    });
     group('Open & Close Index', () {
       late String id;
       setUpAll(() async {
@@ -203,7 +206,7 @@ void main() async {
           fail(ex.message);
         }
       });
-    });
+    }, skip: true);
     group('Split Index', () {});
     group('Clone Index', () {});
     group('Get Settings', () {
