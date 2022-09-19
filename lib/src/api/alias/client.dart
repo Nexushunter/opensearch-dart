@@ -13,13 +13,6 @@ class AliasClient extends ApiClient {
 
   FutureOr<AcknowledgeResponse> _makeRequest({
     required Map<String, dynamic> actions,
-    String? filter,
-    bool? isHidden,
-    bool? mustExist,
-    bool? isWriteIndex,
-    String? routing,
-    String? indexRouting,
-    String? searchRouting,
     Duration masterTimeout = const Duration(seconds: 30),
     Duration timeout = const Duration(seconds: 30),
   }) async {
@@ -30,12 +23,6 @@ class AliasClient extends ApiClient {
           //  states otherwise
           // https://opensearch.org/docs/latest/opensearch/rest-api/alias/#request-body
           data: <String, dynamic>{
-            if (filter != null) 'filter': filter,
-            if (isHidden != null) 'is_hidden': isHidden,
-            if (mustExist != null) 'must_exist': mustExist,
-            if (isWriteIndex != null) 'is_write_index': isWriteIndex,
-            if (routing != null) 'routing': routing,
-            if (searchRouting != null) 'search_routing': searchRouting,
             'actions': [
               if (actions.containsKey('add')) {'add': actions['add']},
               if (actions.containsKey('remove')) {'remove': actions['remove']},
@@ -58,7 +45,6 @@ class AliasClient extends ApiClient {
     required String index,
     String? filter,
     bool? isHidden,
-    bool? mustExist,
     bool? isWriteIndex,
     String? routing,
     String? indexRouting,
@@ -66,24 +52,23 @@ class AliasClient extends ApiClient {
     Duration masterTimeout = const Duration(seconds: 30),
     Duration timeout = const Duration(seconds: 30),
   }) async {
-    var addMap = <String, String>{
+    var addMap = <String, dynamic>{
       'index': index,
       'alias': alias,
+      if (filter != null) 'filter': filter,
+      if (isHidden != null) 'is_hidden': isHidden,
+      if (isWriteIndex != null) 'is_write_index': isWriteIndex,
+      if (routing != null) 'routing': routing,
+      if (indexRouting != null) 'index_routing': indexRouting,
+      if (searchRouting != null) 'search_routing': searchRouting,
     };
 
     return await _makeRequest(
-      actions: <String, Map<String, String>>{
+      actions: <String, Map<String, dynamic>>{
         'add': addMap,
       },
-      filter: filter,
-      isHidden: isHidden,
-      mustExist: mustExist,
-      routing: routing,
-      searchRouting: searchRouting,
-      indexRouting: indexRouting,
       masterTimeout: masterTimeout,
       timeout: timeout,
-      isWriteIndex: isWriteIndex,
     );
   }
 
@@ -91,42 +76,32 @@ class AliasClient extends ApiClient {
   FutureOr<AcknowledgeResponse> remove({
     required String index,
     required String alias,
-    String? filter,
-    bool? isHidden,
     bool? mustExist,
-    bool? isWriteIndex,
-    String? routing,
-    String? indexRouting,
-    String? searchRouting,
     Duration masterTimeout = const Duration(seconds: 30),
     Duration timeout = const Duration(seconds: 30),
   }) async {
-    var removeMap = <String, String>{
+    var removeMap = <String, dynamic>{
       'index': index,
       'alias': alias,
+      if (mustExist != null) 'must_exist': mustExist,
     };
 
     return await _makeRequest(
-      actions: <String, Map<String, String>>{
+      actions: <String, Map<String, dynamic>>{
         'remove': removeMap,
       },
-      filter: filter,
-      isHidden: isHidden,
-      mustExist: mustExist,
-      routing: routing,
-      searchRouting: searchRouting,
-      indexRouting: indexRouting,
       masterTimeout: masterTimeout,
       timeout: timeout,
-      isWriteIndex: isWriteIndex,
     );
   }
 
   /// Deletes an index.
   FutureOr<AcknowledgeResponse> removeIndex(String index) async {
     return await _makeRequest(
-      actions: <String, String>{
-        'remove': index,
+      actions: <String, Map<String, dynamic>>{
+        'remove_index': {
+          'index': index,
+        },
       },
     );
   }
