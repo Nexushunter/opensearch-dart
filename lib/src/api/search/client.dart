@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:opensearch_dart/src/api/index/enums.dart';
 
 import '../common/api_client.dart';
+import 'enums.dart';
+import 'exceptions.dart';
 
 class SearchClient extends ApiClient {
   SearchClient({required super.client, super.signer});
@@ -55,18 +57,6 @@ class SearchClient extends ApiClient {
   }
 }
 
-enum SearchType { query_then_fetch, dfs_query_then_fetch }
-
-enum SearchOperators {
-  And,
-  Or,
-  StartsWIth,
-  EndsWith,
-  Contains,
-  Equals,
-  Not,
-}
-
 String getSearchOperatorFormat(SearchOperators operator) {
   switch (operator) {
     case SearchOperators.StartsWIth:
@@ -82,17 +72,4 @@ String getSearchOperatorFormat(SearchOperators operator) {
     default:
       throw SearchException.invalidOperator(operator.name);
   }
-}
-
-class SearchException implements Exception {
-  final String message;
-  @override
-  String toString() {
-    return message;
-  }
-
-  SearchException(this.message);
-
-  factory SearchException.invalidOperator(String operator) =>
-      SearchException('Invalid search operator: $operator');
 }
