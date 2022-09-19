@@ -463,8 +463,11 @@ class IndexClient extends ApiClient {
     });
   }
 
-  // TODO: Use a fully fleshed out response type
   FutureOr<IndexSettings> getSettings({required String index}) async {
+    if (!(await exists(index: index)).acknowledged) {
+      throw IndexException.invalidIndex();
+    }
+
     return await client
         .get('$index/_settings', queryParameters: {'flat_settings': true})
         .onError(onErrorResponse(endpoint: 'settings'))
@@ -492,7 +495,6 @@ class IndexClient extends ApiClient {
                   DynamicIndexSettings.fromMap(settingsPayload);
             }
 
-            // TOOD: Stop defaulting
             return IndexSettings(
               indexName: index,
               staticSettings: staticIndexSettings,

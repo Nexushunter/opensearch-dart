@@ -216,7 +216,18 @@ void main() async {
       tearDownAll(() async => await iClient.delete(index: id));
       test('Successfully', () async {
         final settings = await iClient.getSettings(index: id);
-        expect(settings, isNotNull);
+        expect(settings.creationDate, isNotNull);
+        expect(settings.versionCreated, isNotNull);
+        expect(settings.uuid, isNotEmpty);
+      });
+
+      test('Fails: missing index', () async {
+        try {
+          await iClient.getSettings(index: Uuid().v4());
+          fail('Index found when shouldn\'t have been');
+        } on IndexException catch (ex) {
+          expect(ex, IndexException.invalidIndex());
+        }
       });
     });
     group('Update Settings', () {});

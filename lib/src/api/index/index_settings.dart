@@ -132,21 +132,67 @@ class DynamicIndexSettings {
     this.finalPipeline = '_none',
   });
 
-  factory DynamicIndexSettings.fromMap(Map<String, dynamic> map) =>
-      DynamicIndexSettings(
-        numberOfReplicas: int.tryParse(map['index.number_of_replicas']) ?? 0,
-        refreshInterval: Duration(
-          seconds: int.parse(
-            map['index.refresh_interval'].substring(
-              0,
-              map['index.refresh_interval'].length - 1,
-            ),
+  factory DynamicIndexSettings.fromMap(Map<String, dynamic> map) {
+    late AutoExpandReplicaSetting autoExpandReplicas;
+    if (map['index.auto_expand_replicas'] != null) {
+      var parts = map['index.auto_expand_replicas'].split('-');
+      autoExpandReplicas = AutoExpandReplicaSetting(
+        disabled: false,
+        lowerLimit: int.parse(parts[0]),
+        upperLimit: parts[1] == 'all' ? 65335 : int.parse(parts[1]),
+      );
+    } else {
+      autoExpandReplicas = AutoExpandReplicaSetting();
+    }
+    return DynamicIndexSettings(
+      numberOfReplicas: int.tryParse(map['index.number_of_replicas']) ?? 1,
+      refreshInterval: Duration(
+        seconds: int.parse(
+          map['index.refresh_interval'].substring(
+            0,
+            map['index.refresh_interval'].length - 1,
           ),
         ),
-        maxResultWindow: int.tryParse(map['index.max_result_window']) ?? 0,
-        maxInnerResultWindow:
-            int.tryParse(map['index.max_inner_result_window']) ?? 0,
-      );
+      ),
+      maxResultWindow: int.tryParse(map['index.max_result_window']) ?? 10000,
+      maxInnerResultWindow:
+          int.tryParse(map['index.max_inner_result_window']) ?? 0,
+      maxRescoreWindow: int.parse(map['index.max_rescore_window']),
+      maxDocValueFieldsSearch:
+          int.parse(map['index.max_docvalue_fields_search']),
+      maxScriptFields: int.parse(map['index.max_script_fields']),
+      maxNGramDiff: int.parse(map['index.max_ngram_diff']),
+      maxShingleDiff: int.parse(map['index.max_shingle_diff']),
+      maxRefreshListeners: int.parse(map['index.max_refresh_listeners']),
+      maxTermsCount: int.parse(map['index.max_terms_count']),
+      maxRegexLength: int.parse(map['index.max_regex_length']),
+      gcDeletes: Duration(
+        seconds: int.parse(
+          map['index.gc_deletes']
+              .substring(0, map['index.gc_deletes'].length - 1),
+        ),
+      ),
+      defaultPipeline: map['index.default_pipeline'],
+      autoExpandReplicas: autoExpandReplicas,
+      analyzeMaxTokenCount: int.parse(map['index.analyze.max_token_count']),
+      highlightMaxAnalyzedOffset:
+          int.parse(map['index.highlight.max_analyzed_offset']),
+      routingReBalanceOption: RoutingReBalanceOption.values.firstWhere(
+          (element) =>
+              element.lowercase() == map['index.routing.rebalance.enable']),
+      routingAllocationEnable: RoutingAllocationOption.values.firstWhere(
+          // TODO: What about _none
+          (element) =>
+              element.lowercase() == map['index.routing.allocation.enable']),
+      queryDefaultField: map['index.query.default_field'].cast<String>(),
+      searchIdleAfter: Duration(
+        seconds: int.parse(
+          map['index.search.idle.after']
+              .substring(0, map['index.search.idle.after'].length - 1),
+        ),
+      ),
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
