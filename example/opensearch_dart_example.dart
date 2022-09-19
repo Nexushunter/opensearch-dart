@@ -23,8 +23,11 @@ void main() async {
   print(ack4.acknowledged);
   final ack6 = await baseClient.indexClient.getSettings(index: 'testing-3');
   print(ack6.dynamicSettings);
-  
-  print(await baseClient.searchClient.all('testing-3'));
+
+  final hits = await baseClient.searchClient.all('testing-3');
+  print(hits);
+  final hits2 = await baseClient.searchClient.allCluster();
+  print(hits2);
 
   final ack5 = await iClient.delete(index: 'testing-3');
 

@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:opensearch_dart/src/api/index/enums.dart';
 
 import '../common/api_client.dart';
+import '../common/responses.dart';
 import 'enums.dart';
 import 'exceptions.dart';
+import 'models.dart';
 
 class SearchClient extends ApiClient {
   SearchClient({required super.client, super.signer});
@@ -44,15 +46,18 @@ class SearchClient extends ApiClient {
     return {};
   }
 
-  FutureOr<Set<dynamic>> all(String index) async {
+  FutureOr<SearchHit> all(String index) async {
     return await client
         .get('$index/_search')
-        .then((value) => Set.from([value]));
+        .onError(onErrorResponse(endpoint: 'search.all'))
+        .then(
+          (value) => SearchHit.fromMap(value.data),
+        );
   }
 
-  FutureOr<Set<dynamic>> allCluster() async {
+  FutureOr<SearchHit> allCluster() async {
     return await client.get('_search').then(
-          (value) => Set.from([value]),
+          (value) => SearchHit.fromMap(value.data),
         );
   }
 }
