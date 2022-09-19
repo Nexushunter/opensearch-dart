@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:opensearch_dart/src/api/index/enums.dart';
 
 import '../common/api_client.dart';
@@ -39,6 +41,58 @@ class SearchClient extends ApiClient {
   }) {
     return {};
   }
+
+  FutureOr<Set<dynamic>> all(String index) async {
+    return await client
+        .get('$index/_search')
+        .then((value) => Set.from([value]));
+  }
+
+  FutureOr<Set<dynamic>> allCluster() async {
+    return await client.get('_search').then(
+          (value) => Set.from([value]),
+        );
+  }
 }
 
 enum SearchType { query_then_fetch, dfs_query_then_fetch }
+
+enum SearchOperators {
+  And,
+  Or,
+  StartsWIth,
+  EndsWith,
+  Contains,
+  Equals,
+  Not,
+}
+
+String getSearchOperatorFormat(SearchOperators operator) {
+  switch (operator) {
+    case SearchOperators.StartsWIth:
+      return '%s:%s*';
+    case SearchOperators.EndsWith:
+      return '%s:*%s';
+    case SearchOperators.Contains:
+      return '%s:*%s*';
+    case SearchOperators.Equals:
+      return '%s:%s';
+    case SearchOperators.Not:
+      return '-${getSearchOperatorFormat(SearchOperators.Equals)}';
+    default:
+      throw SearchException.invalidOperator(operator.name);
+  }
+}
+
+class SearchException implements Exception {
+  final String message;
+  @override
+  String toString() {
+    return message;
+  }
+
+  SearchException(this.message);
+
+  factory SearchException.invalidOperator(String operator) =>
+      SearchException('Invalid search operator: $operator');
+}
