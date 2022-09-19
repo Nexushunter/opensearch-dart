@@ -20,7 +20,7 @@ Module APIs:
   - [x] Shrink Index
   - [ ] Split Index
   - [ ] Clone Index
-  - [ ] Get Settings
+  - [X] Get Settings
   - [ ] Update Settings
   - [ ] Create / Update Mappings
   - [ ] Clear Index or DataStream Cache
@@ -80,8 +80,8 @@ Module APIs:
   - [ ] Reindex
 - [ ] Search
 - [ ] Alias
-  - [ ] Add
-  - [ ] Remove
+  - [x] Add
+  - [x] Remove
   - [ ] RemoveIndex
 - [ ] Cluster
   - [ ] health

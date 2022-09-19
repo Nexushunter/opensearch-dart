@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:opensearch_dart/src/api/alias/client.dart';
+import 'package:opensearch_dart/src/api/search/client.dart';
 
 import 'cat/client.dart';
 import 'common/request_signer.dart';
@@ -43,4 +45,7 @@ class OpenSearchClient {
       ScriptClient(client: _client, signer: _signer);
   SnapshotClient get snapshotClient =>
       SnapshotClient(client: _client, signer: _signer);
+  AliasClient get aliasClient => AliasClient(client: _client, signer: _signer);
+  SearchClient get searchClient =>
+      SearchClient(client: _client, signer: _signer);
 }

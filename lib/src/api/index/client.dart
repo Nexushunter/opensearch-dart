@@ -82,7 +82,7 @@ class IndexClient extends ApiClient {
     return await client
         .fetch(signed)
         .timeout(timeout)
-        .onError(onErrorResponse(endpoint: 'create'))
+        .onError(onErrorResponse(endpoint: 'index.create'))
         .then(
       (resp) {
         return AcknowledgeResponse(
@@ -139,7 +139,7 @@ class IndexClient extends ApiClient {
 
     return await client
         .fetch(signed)
-        .onError(onErrorResponse(endpoint: 'exists'))
+        .onError(onErrorResponse(endpoint: 'index.exists'))
         .then((value) {
       return AcknowledgeResponse(
         acknowledged: value.statusCode == 200,
@@ -178,7 +178,7 @@ class IndexClient extends ApiClient {
           // queryParameters: params,
         )
         .timeout(timeout)
-        .onError(onErrorResponse(endpoint: 'delete'))
+        .onError(onErrorResponse(endpoint: 'index.delete'))
         .then(
           (value) => AcknowledgeResponse(acknowledged: value.statusCode == 200),
         );
@@ -234,7 +234,7 @@ class IndexClient extends ApiClient {
           // queryParameters: params,
         )
         .timeout(masterTimeout)
-        .onError(onErrorResponse(endpoint: 'getIndex'))
+        .onError(onErrorResponse(endpoint: 'index.getIndex'))
         .then((resp) {
       // Grab the first entry with either the matching index name or the matching alias.
       var decoded = (resp.data as Map<String, dynamic>).entries.firstWhere(
@@ -286,7 +286,7 @@ class IndexClient extends ApiClient {
           '${indexNames.reduce((a, b) => '$a,$b')}/_close',
           // queryParameters: params,
         )
-        .onError(onErrorResponse(endpoint: 'close'))
+        .onError(onErrorResponse(endpoint: 'index.close'))
         .then((value) {
       // Get a response back let's handle it.
       if (value.data != null) {
@@ -351,7 +351,7 @@ class IndexClient extends ApiClient {
           '${indexNames.reduce((a, b) => '$a,$b')}/_open',
           queryParameters: params,
         )
-        .onError(onErrorResponse(endpoint: 'open'))
+        .onError(onErrorResponse(endpoint: 'index.open'))
         .then((value) {
       if (value.statusCode == 200) {
         var decoded = value.data;
@@ -434,7 +434,7 @@ class IndexClient extends ApiClient {
           data: body,
         )
         .timeout(masterTimeout)
-        .onError(onErrorResponse(endpoint: 'shrink'))
+        .onError(onErrorResponse(endpoint: 'index.shrink'))
         .then((value) {
       var body = value.data ?? <String, dynamic>{};
       print(body);
@@ -457,7 +457,7 @@ class IndexClient extends ApiClient {
           '$index/_settings',
           data: body,
         )
-        .onError(onErrorResponse(endpoint: 'settings'))
+        .onError(onErrorResponse(endpoint: 'index.settings'))
         .then((value) {
       return AcknowledgeResponse();
     });
@@ -470,7 +470,7 @@ class IndexClient extends ApiClient {
 
     return await client
         .get('$index/_settings', queryParameters: {'flat_settings': true})
-        .onError(onErrorResponse(endpoint: 'settings'))
+        .onError(onErrorResponse(endpoint: 'index.settings'))
         .then(
           (value) {
             StaticIndexSettings staticIndexSettings = StaticIndexSettings();
@@ -505,28 +505,5 @@ class IndexClient extends ApiClient {
             );
           },
         );
-  }
-
-  FutureOr<Response> Function(DioError, StackTrace) onErrorResponse({
-    required String endpoint,
-  }) {
-    return (error, stack) {
-      print('$endpoint Endpoint Exception: ${error.response?.data}');
-      switch (error.response?.statusCode!) {
-        case 401:
-          throw HttpException.unauthorized();
-        case 403:
-          throw HttpException.forbidden();
-        case 400:
-          throw HttpException.badRequest();
-        default:
-          return Response(
-            requestOptions: error.requestOptions,
-            statusCode: error.response?.statusCode ?? 500,
-            statusMessage: error.response?.statusMessage ??
-                '${error.message}\n $stack', //'Unable make index request',
-          );
-      }
-    };
   }
 }

@@ -15,7 +15,15 @@ void main() async {
   final ack = await iClient.create(index: 'testing-3', alias: 'testing');
   print(ack.acknowledged);
   final ack3 = await iClient.get(index: 'testing');
-  print(ack3);
+  print(ack3.aliasMapping);
+  print(ack3.settings);
+  print(ack3.mappings);
+  final ack4 =
+      await baseClient.aliasClient.remove(index: 'testing-3', alias: 'testing');
+  print(ack4.acknowledged);
+  final ack6 = await baseClient.indexClient.getSettings(index: 'testing-3');
+  print(ack6.dynamicSettings);
+
   final ack5 = await iClient.delete(index: 'testing-3');
 
   print(ack5.acknowledged);
