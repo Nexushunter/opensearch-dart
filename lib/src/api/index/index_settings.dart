@@ -1,6 +1,27 @@
 import 'enums.dart';
 import 'models.dart';
 
+class IndexSettings {
+  final String indexName;
+  final StaticIndexSettings staticSettings;
+  final DynamicIndexSettings dynamicSettings;
+  final int versionCreated;
+  final int creationDate;
+  final String uuid;
+  const IndexSettings({
+    required this.indexName,
+    this.versionCreated = 0,
+    this.creationDate = 0,
+    this.uuid = '',
+    this.dynamicSettings = const DynamicIndexSettings(),
+    this.staticSettings = const StaticIndexSettings(),
+  });
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{};
+  }
+}
+
 /// Settings you can change at any time, including at index creation.
 class DynamicIndexSettings {
   /// The number of replica shards each primary shard should have.
@@ -111,6 +132,18 @@ class DynamicIndexSettings {
     this.finalPipeline = '_none',
   });
 
+  factory DynamicIndexSettings.fromMap(Map<String, dynamic> map) =>
+      DynamicIndexSettings(
+        numberOfReplicas: map['index.number_of_replicas'] as int,
+        refreshInterval: Duration(
+            seconds: ((map['index.refresh_interval'] as String).substring(
+          0,
+          (map['index.refresh_interval'] as String).length - 1,
+        )) as int),
+        maxResultWindow: map['index.max_result_window'] as int,
+        maxInnerResultWindow: map['index.max_inner_result_window'] as int,
+      );
+
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       'index': {
@@ -206,6 +239,31 @@ class StaticIndexSettings {
     this.numberOfRoutingShards = 1,
     this.routingPartitionSize = 1,
   }) : assert(numberOfShards >= 1 && routingPartitionSize <= numberOfShards);
+
+  factory StaticIndexSettings.fromMap(Map<String, dynamic> mapping) =>
+      StaticIndexSettings(
+        softDeleteRetentionLeasePeriod: Duration(
+          seconds:
+              (mapping['index.soft_deletes.retention_lease.period'] as String)
+                  .substring(
+                      0,
+                      (mapping['index.soft_deletes.retention_lease.period']
+                                  as String)
+                              .length -
+                          1) as int,
+        ),
+        hidden: mapping['index.hidden'],
+        codec: IndexCodec.values.firstWhere(
+            (element) => element.lowercase() == mapping['index.codec']),
+        loadFixedBitsetFiltersEagerly:
+            mapping['index.load_fixed_bitset_filters_eagerly'] as bool,
+        numberOfRoutingShards: mapping['index.number_of_routing_shards'] as int,
+        numberOfShards: mapping['index.number_of_shards'] as int,
+        shardCheckOnStart: ShardCheckOptions.values.firstWhere(
+          (element) =>
+              element.lowercase() == mapping['index.shard_check_on_start'],
+        ),
+      );
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{

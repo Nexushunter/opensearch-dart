@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:logging/logging.dart';
@@ -275,39 +274,49 @@ class IndexClient extends ApiClient {
     Duration masterTimeout = const Duration(seconds: 30),
     Duration timeout = const Duration(seconds: 30),
   }) async {
-    var params = <String, dynamic>{
-      'ignore_unavailable': ignoreUnavailable,
-      'allow_no_indices': allowNoIndices,
-      'wait_for_active_shards': waitForActiveShards,
-      'master_timeout': '${masterTimeout.inSeconds}s',
-      'timeout': '${timeout.inSeconds}s',
-    };
+    // var params = <String, dynamic>{
+    //   'ignore_unavailable': ignoreUnavailable,
+    //   'allow_no_indices': allowNoIndices,
+    //   'wait_for_active_shards': waitForActiveShards,
+    //   'master_timeout': '${masterTimeout.inSeconds}s',
+    //   'timeout': '${timeout.inSeconds}s',
+    // };
     return await client
         .post(
           '${indexNames.reduce((a, b) => '$a,$b')}/_close',
-          queryParameters: params,
+          // queryParameters: params,
         )
         .onError(onErrorResponse(endpoint: 'close'))
         .then((value) {
-      var decoded = jsonDecode(value.data);
-      var indexMapping = decoded['indices'] as Map<String, dynamic>;
-      var closedIndices = <String>[];
-      indexMapping.forEach((key, value) {
-        value as Map<String, dynamic>;
-        if (value['closed']) {
-          closedIndices.add(key);
-        }
-      });
+      // Get a response back let's handle it.
+      if (value.data != null) {
+        var decoded = value.data as Map<String, dynamic>;
+        var indexMapping = decoded['indices'] as Map<String, dynamic>;
+        var closedIndices = <String>[];
+        indexMapping.forEach((key, value) {
+          value as Map<String, dynamic>;
+          if (value['closed']) {
+            closedIndices.add(key);
+          }
+        });
+
+        return CloseIndexResponse(
+          shardsAcknowledged: ShardsAcknowledgedResponse(
+            shardsAcknowledged: decoded['shards_acknowledged'],
+            acknowledged: AcknowledgeResponse(
+              acknowledged: decoded['acknowledged'],
+            ),
+          ),
+          indicesClosed: closedIndices,
+        );
+      }
 
       return CloseIndexResponse(
-        shardsAcknowledged: ShardsAcknowledgedResponse(
-          shardsAcknowledged: decoded['shards_acknowledged'],
-          acknowledged: AcknowledgeResponse(
-            acknowledged: decoded['acknowledged'],
-          ),
-        ),
-        indicesClosed: closedIndices,
-      );
+          shardsAcknowledged: ShardsAcknowledgedResponse(
+              shardsAcknowledged: value.statusCode == 200,
+              acknowledged:
+                  AcknowledgeResponse(acknowledged: value.statusCode == 200)),
+          indicesClosed: []);
     });
   }
 
@@ -321,6 +330,7 @@ class IndexClient extends ApiClient {
   /// [masterTimeout] The time to wait for the master node to connect.
   /// [timeout] How long to wait for the response to return.
   FutureOr<ShardsAcknowledgedResponse> open({
+    // TODO: Should this be a required param?
     List<String> indexNames = const ['*'],
     bool allowNoIndices = true,
     int waitForActiveShards = 1,
@@ -343,22 +353,20 @@ class IndexClient extends ApiClient {
         )
         .onError(onErrorResponse(endpoint: 'open'))
         .then((value) {
-      var decoded = jsonDecode(value.data);
-      var indexMapping = decoded['indices'] as Map<String, dynamic>;
-      var closedIndices = <String>[];
-      indexMapping.forEach((key, value) {
-        value as Map<String, dynamic>;
-        if (value['closed']) {
-          closedIndices.add(key);
-        }
-      });
-
+      if (value.statusCode == 200) {
+        var decoded = value.data;
+        return ShardsAcknowledgedResponse(
+          shardsAcknowledged: decoded['shards_acknowledged'],
+          acknowledged: AcknowledgeResponse(
+            acknowledged: decoded['acknowledged'],
+          ),
+        );
+      }
       return ShardsAcknowledgedResponse(
-        shardsAcknowledged: decoded['shards_acknowledged'],
-        acknowledged: AcknowledgeResponse(
-          acknowledged: decoded['acknowledged'],
-        ),
-      );
+          shardsAcknowledged: value.statusCode == 200,
+          acknowledged: AcknowledgeResponse(
+            acknowledged: value.statusCode == 200,
+          ));
     });
   }
 
@@ -377,7 +385,7 @@ class IndexClient extends ApiClient {
   ///   - is_write_index
   ///   - routing
   ///   - search_routing
-  FutureOr<AcknowledgeResponse> shrinkIndex({
+  FutureOr<AcknowledgeResponse> shrink({
     required String index,
     required String target,
     String? alias, // TODO: Use alias settings class instead
@@ -390,35 +398,122 @@ class IndexClient extends ApiClient {
   }) async {
     verifyNaming(index);
     verifyNaming(target);
-    var params = <String, dynamic>{
-      'wait_for_active_shards': waitForActiveShards,
-      'master_timeout': '${masterTimeout.inSeconds}s',
-      'timeout': '${timeout.inSeconds}s',
-    };
-
-    // TODO: Handle settings???
-    // TODO: Alias handling
+    // final ro = await updateSettings(index: index, readOnly: true);
+    // if (!ro.acknowledged) {
+    //   throw Exception('unable to update settings');
+    // }
+    // var params = <String, dynamic>{
+    //   'wait_for_active_shards': waitForActiveShards,
+    //   'master_timeout': '${masterTimeout.inSeconds}s',
+    //   'timeout': '${timeout.inSeconds}s',
+    // };
+    //
+    // // TODO: Handle settings???
+    // // TODO: Alias handling
     var body = <String, dynamic>{
-      'max_primary_shard_size': maxPrimaryShardSizeBytes,
-      'settings': mergeStaticAndDynamicSettings(
-          staticIndexSettings, dynamicIndexSettings),
+      //   'max_primary_shard_size': maxPrimaryShardSizeBytes,
+      //   'settings': mergeStaticAndDynamicSettings(
+      //       staticIndexSettings, dynamicIndexSettings),
+      // TODO: This setting is being listed as invalid even though it is the
+      //  given suggestion. Setting the index.block.read_only=true locks the index.
+      //  A closed index is also un usable.
+      // index.blocks.write: 'true'
+      'settings': {
+        'index': {
+          'blocks': {
+            'write': true,
+          }
+        },
+      }
     };
 
     return await client
         .post(
           '$index/_shrink/$target',
-          queryParameters: params,
+          // queryParameters: params,
           data: body,
         )
         .timeout(masterTimeout)
         .onError(onErrorResponse(endpoint: 'shrink'))
-        .then((value) => AcknowledgeResponse());
+        .then((value) {
+      var body = value.data ?? <String, dynamic>{};
+      print(body);
+      return AcknowledgeResponse(acknowledged: value.statusCode == 200);
+    });
+  }
+
+  FutureOr<AcknowledgeResponse> updateSettings({
+    required String index,
+    bool readOnly = false,
+  }) async {
+    // TODO: move settings into dynamic settings
+    var body = <String, dynamic>{
+      'index': {
+        'blocks.read_only': readOnly,
+      }
+    };
+    return await client
+        .put(
+          '$index/_settings',
+          data: body,
+        )
+        .onError(onErrorResponse(endpoint: 'settings'))
+        .then((value) {
+      return AcknowledgeResponse();
+    });
+  }
+
+  // TODO: Use a fully fleshed out response type
+  FutureOr<IndexSettings> getSettings({required String index}) async {
+    return await client
+        .get('$index/_settings', queryParameters: {'flat_settings': true})
+        .onError(onErrorResponse(endpoint: 'settings'))
+        .then(
+          (value) {
+            StaticIndexSettings staticIndexSettings = StaticIndexSettings();
+            DynamicIndexSettings dynamicIndexSettings = DynamicIndexSettings();
+            int version = 0;
+            int createDate = 0;
+            String uuid = '';
+            String providedName = index;
+            if (value.statusCode == 200) {
+              print(value.data[index]);
+              var settingsPayload = value.data[index]['settings'];
+              uuid = settingsPayload['index.uuid'];
+              createDate = settingsPayload['index.creation_date'];
+              version = settingsPayload['index.version.created'] as int;
+              providedName = settingsPayload['index.provided_name'];
+
+              staticIndexSettings = StaticIndexSettings(
+                hidden: settingsPayload['hidden'] as bool,
+                loadFixedBitsetFiltersEagerly:
+                    settingsPayload['index.load_fixed_bitset_filters_eagerly']
+                        as bool,
+                codec: IndexCodec.values.firstWhere(
+                  (element) => element.name == settingsPayload['index.codec'],
+                  orElse: () => IndexCodec.Default,
+                ),
+              );
+            }
+
+            // TOOD: Stop defaulting
+            return IndexSettings(
+              indexName: index,
+              staticSettings: staticIndexSettings,
+              dynamicSettings: dynamicIndexSettings,
+              versionCreated: version,
+              uuid: uuid,
+              creationDate: createDate,
+            );
+          },
+        );
   }
 
   FutureOr<Response> Function(DioError, StackTrace) onErrorResponse({
     required String endpoint,
   }) {
     return (error, stack) {
+      print('$endpoint Endpoint Exception: ${error.response?.data}');
       switch (error.response?.statusCode!) {
         case 401:
           throw HttpException.unauthorized();

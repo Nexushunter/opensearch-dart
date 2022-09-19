@@ -11,6 +11,8 @@ dependencies:
   logging: any
   aws_common: ^0.1.0
   aws_signature_v4: ^0.1.0
+  uuid: any
+
 
 dev_dependencies:
   lints: ^2.0.0

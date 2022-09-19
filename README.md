@@ -7,6 +7,8 @@ This library is intended to be used in both [Flutter](https://flutter.dev) and [
 
 The following are the APIs implemented in this package.
 
+*Note* (Sept. 18): Not all APIs are tested, or provide a preliminary set of tests. More test cases required. 
+
 Module APIs:
 - [ ] Index
   - [x] Create
