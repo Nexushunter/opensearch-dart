@@ -10,7 +10,7 @@ import 'models.dart';
 
 class SearchClient extends ApiClient {
   SearchClient({required super.client, super.signer});
-  Set<dynamic> search({
+  Set<SearchHit> search({
     bool allowNoIndices = true,
     bool allowPartialSearchResults = true,
     String? analyzer,
@@ -62,6 +62,8 @@ class SearchClient extends ApiClient {
   }
 }
 
+// TODO: This is a very simplified version of the templating required via the
+//  lucene query language
 String getSearchOperatorFormat(SearchOperators operator) {
   switch (operator) {
     case SearchOperators.StartsWIth:

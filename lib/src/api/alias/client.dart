@@ -19,14 +19,12 @@ class AliasClient extends ApiClient {
     return await client
         .post(
           '_aliases',
-          // TODO: Many of these settings aren't valid though the documentation
-          //  states otherwise
-          // https://opensearch.org/docs/latest/opensearch/rest-api/alias/#request-body
           data: <String, dynamic>{
             'actions': [
               if (actions.containsKey('add')) {'add': actions['add']},
               if (actions.containsKey('remove')) {'remove': actions['remove']},
-              // TODO: Support for removeIndex required.
+              if (actions.containsKey('remove_index'))
+                {'remove_index': actions['remove_index']}
             ],
           },
           queryParameters: <String, String>{
@@ -40,9 +38,31 @@ class AliasClient extends ApiClient {
         );
   }
 
+  /// Adds an alias to the specified index.
+  ///
+  /// [index] - The name you want to associate with the [alias]. Supports
+  ///   wildcard expressions. Required if you don’t supply an [indices].
+  /// [indices] - Array of index names you want to associate with the alias.
+  /// [alias] - The name of the alias. Required if you don’t supply an [aliases].
+  /// [aliases] - Array of alias names to use.
+  /// [filter] - A filter to use with the alias, so the alias points to a
+  ///   filtered part of the index.
+  /// [isHidden] - Specifies whether the alias should be hidden from results that
+  ///   include wildcard expressions.
+  /// [isWriteIndex] - Specifies whether the index should be a write index. An
+  ///   alias can only have one write index at a time. If a write request is
+  ///   submitted to a alias that links to multiple indexes, OpenSearch executes
+  ///   the request only on the write index.
+  /// [routing] - Used to assign a custom value to a shard for specific operations.
+  /// [indexRouting] - Assigns a custom value to a shard only for index operations.
+  /// [searchRouting] - Assigns a custom value to a shard only for search operations.
+  /// [masterTimeout] - The amount of time to wait for a response from the master node.
+  /// [timeout] - The amount of time to wait for a response from the cluster.
   FutureOr<AcknowledgeResponse> add({
-    required String alias,
-    required String index,
+    String? alias,
+    String? index,
+    List<String>? aliases,
+    List<String>? indices,
     String? filter,
     bool? isHidden,
     bool? isWriteIndex,
@@ -52,9 +72,19 @@ class AliasClient extends ApiClient {
     Duration masterTimeout = const Duration(seconds: 30),
     Duration timeout = const Duration(seconds: 30),
   }) async {
+    if (aliases != null) {
+      assert(alias == null);
+    }
+
+    if (indices != null) {
+      assert(index == null);
+    }
+
     var addMap = <String, dynamic>{
-      'index': index,
-      'alias': alias,
+      if (index != null) 'index': index,
+      if (indices != null) 'indices': indices,
+      if (alias != null) 'alias': alias,
+      if (aliases != null) 'aliases': aliases,
       if (filter != null) 'filter': filter,
       if (isHidden != null) 'is_hidden': isHidden,
       if (isWriteIndex != null) 'is_write_index': isWriteIndex,
@@ -73,6 +103,13 @@ class AliasClient extends ApiClient {
   }
 
   /// Removes an alias from the specified index.
+  ///
+  /// [index] - The name you want to associate with the [alias]. Supports
+  ///   wildcard expressions.
+  /// [alias] - The name of the alias. Required if you don’t supply an [aliases].
+  /// [mustExist] - Specifies whether the alias to remove must exist.
+  /// [masterTimeout] - The amount of time to wait for a response from the master node.
+  /// [timeout] - The amount of time to wait for a response from the cluster.
   FutureOr<AcknowledgeResponse> remove({
     required String index,
     required String alias,
@@ -96,6 +133,8 @@ class AliasClient extends ApiClient {
   }
 
   /// Deletes an index.
+  ///
+  /// [index] - The name of the index to delete.
   FutureOr<AcknowledgeResponse> removeIndex(String index) async {
     return await _makeRequest(
       actions: <String, Map<String, dynamic>>{

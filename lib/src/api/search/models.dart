@@ -1,3 +1,5 @@
+import '../common/models.dart';
+
 class SearchHit {
   final int took;
   final bool timedOut;
@@ -18,29 +20,19 @@ class SearchHit {
   }
 }
 
-// TODO Provide better support / class casting
-class Document {
-  final Map<String, dynamic> _mapping;
-  Document({Map<String, dynamic> mapping = const {}}) : _mapping = mapping;
-  factory Document.fromMap(Map<String, dynamic> map) => Document(mapping: map);
-  Map<String, dynamic> toJson() => _mapping;
-
-  @override
-  String toString() {
-    return _mapping.toString();
-  }
-}
-
 class HitsResult {
   final TotalResult total;
   final int? maxScore;
-  final List<Document> hits;
+  final List<SearchDocument> hits;
   const HitsResult(this.total, this.maxScore, this.hits);
 
   factory HitsResult.fromMap(Map<String, dynamic> map) => HitsResult(
         TotalResult.fromMap(map['total']),
         map['max_Score'],
-        map['hits'].map((m) => Document.fromMap(m)).toList().cast<Document>(),
+        map['hits']
+            .map((m) => SearchDocument.fromMap(m))
+            .toList()
+            .cast<SearchDocument>(),
       );
 
   @override

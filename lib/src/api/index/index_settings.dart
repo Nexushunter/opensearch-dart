@@ -128,7 +128,7 @@ class DynamicIndexSettings {
     this.routingAllocationEnable = RoutingAllocationOption.all,
     this.routingReBalanceOption = RoutingReBalanceOption.all,
     this.gcDeletes = const Duration(seconds: 60),
-    this.defaultPipeline = '',
+    this.defaultPipeline = '_none',
     this.finalPipeline = '_none',
   });
 
