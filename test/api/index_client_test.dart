@@ -10,105 +10,55 @@ void main() async {
   group('Index Client', () {
     Dio baseClient = Dio(BaseOptions(baseUrl: 'http://localhost:9200/'));
     var iClient = IndexClient(client: baseClient);
+    group('Ensures naming conventions', () {
+      final invalidPrefixes = <String>['-', '_'];
+      final invalidFormatChars = <String>[
+        ',',
+        '|',
+        '/',
+        '\\',
+        '>',
+        '<',
+        '+',
+        '*',
+        '#',
+        ' ',
+      ];
+
+      invalidPrefixes.forEach((prefix) {
+        test('Starts with $prefix', () async {
+          try {
+            await iClient.create(index: '${prefix}name');
+          } on IndexException catch (e) {
+            expect(e, IndexException.invalidIndexPrefix());
+          }
+        });
+      });
+
+      invalidFormatChars.forEach((invalidChar) {
+        var charValue = invalidChar == ' ' ? 'Space' : invalidChar;
+        test('Contains $charValue', () async {
+          try {
+            await iClient.create(index: 'name${invalidChar}test');
+          } on IndexException catch (e) {
+            expect(e, IndexException.invalidNameFormat());
+          }
+        });
+      });
+    });
     group('Create Index', () {
       test('Successfully', () async {
         expect((await iClient.create(index: Uuid().v4())).acknowledged, isTrue);
       });
-      group('Fails', () {
-        test('Exists', () async {
-          final id = Uuid().v4();
-          expect((await iClient.create(index: id)).acknowledged, isTrue);
+      test('Exists', () async {
+        final id = Uuid().v4();
+        expect((await iClient.create(index: id)).acknowledged, isTrue);
 
-          try {
-            await iClient.create(index: id);
-          } on IndexException catch (e) {
-            expect(e, IndexException.conflict());
-          }
-        });
-        test('Starts with _', () async {
-          try {
-            await iClient.create(index: '_name');
-          } on IndexException catch (e) {
-            expect(e, IndexException.invalidIndexPrefix());
-          }
-        });
-        test('Starts with -', () async {
-          try {
-            await iClient.create(index: '-name');
-          } on IndexException catch (e) {
-            expect(e, IndexException.invalidIndexPrefix());
-          }
-        });
-        test('Contains space', () async {
-          try {
-            await iClient.create(index: 'name test');
-          } on IndexException catch (e) {
-            expect(e, IndexException.invalidNameFormat());
-          }
-        });
-        test('Contains comma', () async {
-          try {
-            await iClient.create(index: 'name,test');
-          } on IndexException catch (e) {
-            expect(e, IndexException.invalidNameFormat());
-          }
-        });
-        test('Contains |', () async {
-          try {
-            await iClient.create(index: 'name|test');
-          } on IndexException catch (e) {
-            expect(e, IndexException.invalidNameFormat());
-          }
-        });
-        test('Contains /', () async {
-          try {
-            await iClient.create(index: 'name/test');
-          } on IndexException catch (e) {
-            expect(e, IndexException.invalidNameFormat());
-          }
-        });
-        test('Contains \\', () async {
-          try {
-            await iClient.create(index: 'name\\test');
-          } on IndexException catch (e) {
-            expect(e, IndexException.invalidNameFormat());
-          }
-        });
-        test('Contains >', () async {
-          try {
-            await iClient.create(index: 'name>test');
-          } on IndexException catch (e) {
-            expect(e, IndexException.invalidNameFormat());
-          }
-        });
-        test('Contains <', () async {
-          try {
-            await iClient.create(index: 'name<test');
-          } on IndexException catch (e) {
-            expect(e, IndexException.invalidNameFormat());
-          }
-        });
-        test('Contains #', () async {
-          try {
-            await iClient.create(index: 'name#test');
-          } on IndexException catch (e) {
-            expect(e, IndexException.invalidNameFormat());
-          }
-        });
-        test('Contains +', () async {
-          try {
-            await iClient.create(index: 'name+test');
-          } on IndexException catch (e) {
-            expect(e, IndexException.invalidNameFormat());
-          }
-        });
-        test('Contains *', () async {
-          try {
-            await iClient.create(index: 'name*test');
-          } on IndexException catch (e) {
-            expect(e, IndexException.invalidNameFormat());
-          }
-        });
+        try {
+          await iClient.create(index: id);
+        } on IndexException catch (e) {
+          expect(e, IndexException.conflict());
+        }
       });
     });
     group('Delete Index', () {

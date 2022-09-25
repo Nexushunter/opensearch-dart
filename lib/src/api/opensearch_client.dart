@@ -14,6 +14,9 @@ import 'signer/aws_signer.dart';
 import 'signer/noop_signer.dart';
 import 'snapshots/client.dart';
 
+// TODO: Add example for AWS config and non-AWS config.
+
+/// A client for managing communications with an [OpenSearch] cluster.
 class OpenSearchClient {
   late final Dio _client;
   late final RequestSigner _signer;

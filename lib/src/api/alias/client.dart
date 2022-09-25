@@ -38,6 +38,8 @@ class AliasClient extends ApiClient {
         );
   }
 
+  // TODO: Add AddRemove call.
+
   /// Adds an alias to the specified index.
   ///
   /// [index] - The name you want to associate with the [alias]. Supports
