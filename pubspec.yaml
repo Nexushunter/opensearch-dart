@@ -9,8 +9,8 @@ environment:
 dependencies:
   dio: ^4.0.6
   logging: any
-  aws_common: ^0.1.0
-  aws_signature_v4: ^0.1.0
+  aws_common: ">=0.1.0 <0.3.0"
+  aws_signature_v4: ">=0.1.0 <0.3.0"
   uuid: any
 
 
