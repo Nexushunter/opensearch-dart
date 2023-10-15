@@ -12,6 +12,7 @@ import 'package:openapi_generator_annotations/openapi_generator_annotations.dart
   outputDirectory: 'generated',
   additionalProperties: AdditionalProperties(
     pubName: 'opensearch',
+    pubDescription: 'Generated OpenSearch API client for Dart',
     sortParamsByRequiredFlag: true,
     sortModelPropertiesByRequiredFlag: true,
     useEnumExtension: true,
