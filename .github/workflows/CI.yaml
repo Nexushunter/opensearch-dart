@@ -1,33 +1,52 @@
 name: CI
 
+concurrency:
+  group: ci-${{ github.run_id }}
+
 on:
-  push:
-    paths-ignore:
-      - '*.md'
-      - '*.yaml'
+  pull_request:
+
+defaults:
+  run:
+    working-directory: generated
 
 jobs:
-  build:
+  core-checks:
+    name: Core Checks
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1.5.0
+      - run: dart pub get
+      - run: dart format --check
+      # TODO: Once the analyzer is fixed, uncomment this line.
+      #   This requires that the lint package is added to the pubspec.yaml.
+      - run: dart analyze #--fatal-warnings
+
+  unit-test:
+    name: Unit Tests (Dart ${{ matrix.version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [2.18.7, stable]
     steps:
       - name: Install deps
         run: |
           sudo apt update
           sudo apt install -y make
       - name: Checkout
-        uses: actions/checkout@v2
-      - name: Setup flutter
-        uses: subosito/flutter-action@v2
+        uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1.5.0
         with:
-          channel: 'stable'
+          sdk: ${{ matrix.version }}
       - name: Install OpenSearch
         uses: ankane/setup-opensearch@v1
-        with:
-          opensearch-version: 2.3.0
       - name: Run Tests
-        run: make unit-tests
+        run: dart test --coverage=coverage/lcov.info
       - name: Archive coverage artifact
         uses: actions/upload-artifact@v2
         with:
-          name: unit-test-coverage.info
+          name: unit-test-coverage-${{ matrix.version }}.info
           path: coverage/lcov.info
