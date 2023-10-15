@@ -1,5 +1,0 @@
-cluster.name: "opensearch-dart-cluster"
-network.host: 0.0.0.0
-
-# https://opensearch.org/docs/1.2/opensearch/snapshot-restore/
-path.repo: ["/usr/share/opensearch/snapshots"]
