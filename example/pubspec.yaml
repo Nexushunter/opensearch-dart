@@ -1,0 +1,14 @@
+name: opensearch_dart_example
+description: Opensearch bindings for Dart and Flutter
+version: 0.1.0
+publish_to: none
+# homepage: https://www.example.com
+
+environment:
+  sdk: '>=2.18.1 <4.0.0'
+
+dependencies:
+  uuid: ^4.1.0
+  logging: ^1.1.0
+  opensearch:
+    path: ../generated

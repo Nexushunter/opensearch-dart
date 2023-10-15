@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   opensearch:
-    image: opensearchproject/opensearch:2.3.0
+    image: opensearchproject/opensearch:latest
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
@@ -26,9 +26,9 @@ services:
     ports:
       - 9200:9200
       - 9600:9600 # required for Performance Analyzer
-  
+
   opensearch-dashboards:
-    image: opensearchproject/opensearch-dashboards:2.3.0
+    image: opensearchproject/opensearch-dashboards:latest
     container_name: opensearch-dashboards
     ports:
       - 5601:5601
